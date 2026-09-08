@@ -1,0 +1,13 @@
+{
+  "name": "karat",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "setup": "npm install && npm --prefix frontend install",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

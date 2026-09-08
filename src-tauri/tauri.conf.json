@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Karat",
+  "version": "0.1.0",
+  "identifier": "com.karat.ide",
+  "build": {
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev --prefix frontend",
+    "beforeBuildCommand": "npm run build --prefix frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Karat",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.ico", "icons/icon.png", "icons/icon.icns"],
+    "category": "DeveloperTool",
+    "shortDescription": "A lightweight IDE crafted with Rust",
+    "longDescription": "Karat is a lightweight, fast IDE written in Rust: editor, terminal, search, git and more.",
+    "windows": {
+      "nsis": {
+        "languages": ["English"],
+        "displayLanguageSelector": false
+      },
+      "wix": {
+        "language": "en-US"
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    }
+  }
+}

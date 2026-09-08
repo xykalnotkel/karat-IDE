@@ -1,0 +1,41 @@
+target/
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/build/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/*/build/
+src-tauri/gen/android/local.properties
+node_modules/
+frontend/node_modules/
+frontend/dist/
+*.log
+.DS_Store
+
+# DLL build outputs
+dist/
+dist-dll/
+dist-dll-x86/
+release-dll/
+*.dll
+*.lib
+*.so
+*.dylib
+*.pdb
+karat-windows-*.zip
+karat-dll-windows.zip
+*.a
+
+# Security - never commit tokens
+uploads/
+my-binimbg.txt
+.env
+.env.local
+*.key
+*.pem
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+

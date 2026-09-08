@@ -1,0 +1,159 @@
+# Karat 🦀
+
+**Karat** adalah IDE desktop ringan dan cepat yang ditulis dengan **Rust + Tauri** —
+terinspirasi dari VS Code, tapi dengan backend native yang ramping.
+
+> Status: **v0.1.0** — aplikasi desktop jadi. Build Windows menghasilkan
+> `Karat-setup.exe` (NSIS) + `Karat.msi` (WiX).
+
+---
+
+## ✨ Fitur
+
+| Area | Fitur |
+|---|---|
+| 📝 Editor | Monaco Editor (mesin yang sama dengan VS Code), 40+ bahasa, minimap, multi-tab, dirty indicator, sticky scroll |
+| 📁 Explorer | Tree file, Open Folder (dialog native), new/rename/delete |
+| 🔍 Search | Cari teks ke seluruh workspace |
+| 💻 Terminal | Terminal terintegrasi penuh (PTY asli + xterm.js) |
+| ▶️ Run | "Run Active File" — otomatis `cargo run` / `npm run dev` / `python3` / `node` / … |
+| ⎇ Git | Branch di statusbar, changes (staged/unstaged/untracked), stage, commit |
+| ⌨️ Palette | Quick open fuzzy (`Ctrl+P`) + command palette (`Ctrl+Shift+P`) |
+| 🎨 Tema | Dark & light mode |
+
+---
+
+## 🪟 Build untuk Windows (.exe + .msi)
+
+### Prasyarat (sekali saja)
+
+1. **Rust** — install via [rustup](https://rustup.rs) (butuh *Visual Studio C++ Build Tools*,
+   biasanya sudah ikut jika install Rust lewat winget/`rustup-init`).
+2. **Node.js 18+** — dari [nodejs.org](https://nodejs.org).
+3. **WebView2** — sudah bawaan Windows 10/11, tidak perlu install.
+
+> WiX & NSIS otomatis diunduh oleh Tauri saat build pertama. Signing/publish
+> ke Microsoft Store butuh sertifikat (opsional, nanti saja).
+
+### Build installer
+
+```powershell
+git clone <repo-karat>
+cd karat
+
+npm run setup        # install deps root + frontend (sekali saja)
+npm run tauri:build  # → .exe + .msi
+```
+
+Hasilnya ada di:
+
+```
+src-tauri\target\release\bundle\nsis\Karat_0.1.0_x64-setup.exe
+src-tauri\target\release\bundle\msi\Karat_0.1.0_x64_en-US.msi
+```
+
+### Mode dev di Windows (hot-reload UI)
+
+```powershell
+npm run tauri:dev
+```
+
+---
+
+## 🐧 Build Linux / 🍎 macOS
+
+Prasyarat Linux (Debian/Ubuntu):
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+```
+
+Lalu perintahnya sama: `npm run setup` → `npm run tauri:build`
+(h timely menghasilkan `.deb` di Linux, `.dmg` di macOS).
+
+## 🌐 Mode web (opsional, buat dev/preview)
+
+Backend yang sama tetap bisa jalan sebagai server web:
+
+```bash
+cargo run                  # backend :3000 (single-port, serve frontend/dist)
+# atau frontend terpisah:
+cd frontend && npm run dev # UI :5173 (proxy /api + /ws ke backend)
+```
+
+| Env var | Default | Fungsi |
+|---|---|---|
+| `KARAT_ROOT` | `./workspace` | Folder workspace (web & desktop) |
+| `KARAT_PORT` | `3000` | Port backend web |
+
+---
+
+## 🏗️ Arsitektur
+
+```
+karat/
+├── src/                      # karat-core (Rust lib, dipakai web + desktop)
+│   ├── core_fs.rs            # Filesystem + search (path selalu divalidasi)
+│   ├── core_git.rs           # Git via CLI: status --porcelain, add, commit
+│   ├── core_term.rs          # Terminal: PTY native (portable-pty)
+│   ├── main.rs / fs_api.rs / git_api.rs / term.rs   # Server web Axum (opsional)
+├── src-tauri/                # Aplikasi desktop
+│   ├── src/lib.rs            # 16 Tauri commands (IPC, tanpa HTTP)
+│   ├── tauri.conf.json       # Konfig bundle: NSIS + MSI + updater-ready
+│   ├── capabilities/         # Izin minimal (dialog open-folder)
+│   └── icons/                # Icon installer (ico/icns/png, via `tauri icon`)
+├── frontend/                 # UI web (TypeScript + Vite, tanpa framework)
+│   └── src/
+│       ├── transport.ts      # Otomatis: Tauri IPC di desktop, HTTP di web
+│       ├── main.ts           # Wiring: menu, shortcut, Open Folder, tema
+│       ├── editorView.ts     # Monaco + tab management
+│       └── terminalView.ts / explorer.ts / searchView.ts / gitView.ts / …
+└── workspace/                # Folder demo
+```
+
+**Kenapa satu core untuk dua target?** Seluruh logika (file, git, terminal)
+ditulis sekali di `karat-core`. Versi desktop memanggilnya via Tauri IPC
+(tanpa overhead HTTP), versi web via Axum — UI-nya 100% sama.
+
+### Tauri commands (desktop IPC)
+
+| Command | Fungsi |
+|---|---|
+| `get_root` / `set_root` | Workspace aktif |
+| `list_dir`, `read_file`, `save_file` | Baca/tulis file |
+| `make_dir`, `delete_path`, `rename_path` | Kelola file/folder |
+| `search_files` | Grep rekursif |
+| `git_status`, `git_add`, `git_commit` | Git |
+| `term_spawn`, `term_input`, `term_resize`, `term_kill` | Terminal PTY (output via `Channel`) |
+
+---
+
+## 🗺️ Roadmap
+
+- **v0.2 — Jadi IDE beneran**
+  - [ ] Language Server Protocol (autocomplete, diagnostics, hover, go-to-definition)
+  - [ ] Debug Adapter Protocol (breakpoint, step, variables)
+  - [ ] Panel Problems/Output, multi-terminal, diff view
+  - [ ] Settings UI + keybinding editor
+- **v0.3 — Ekosistem**
+  - [ ] Extension API (plugin JS/WASM)
+  - [ ] Auto-update (Tauri updater + signing)
+  - [ ] Git lanjutan: branch, push/pull
+  - [ ] Microsoft Store / Winget publish
+
+---
+
+## ⌨️ Shortcut
+
+| Shortcut | Aksi |
+|---|---|
+| `Ctrl+S` | Save |
+| `Ctrl+P` | Quick open |
+| `Ctrl+Shift+P` | Command palette |
+| `Ctrl+Shift+F` | Search in files |
+| `Ctrl+B` | Toggle sidebar |
+| ``Ctrl+` `` | Toggle terminal |
+| `Ctrl+F` | Find in file |
+
+Lisensi: MIT.
