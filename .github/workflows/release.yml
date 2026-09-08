@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (e.g. v0.1.1)"
+        description: "Release version"
         required: false
         default: "v0.1.0-manual"
 
@@ -31,60 +31,12 @@ jobs:
           Copy-Item target/release/karat.dll release-dll/
           Copy-Item target/release/karat.lib release-dll/ -ErrorAction SilentlyContinue
           Copy-Item target/i686-pc-windows-msvc/release/karat.dll release-dll/karat_x86.dll
-          @"
-// karat.h
-#pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
-void karat_free_string(char* s);
-char* karat_version();
-char* karat_health();
-char* karat_list_dir(const char* root, const char* rel);
-char* karat_read_file(const char* root, const char* rel);
-char* karat_save_file(const char* root, const char* rel, const char* content);
-char* karat_make_dir(const char* root, const char* rel);
-char* karat_delete_path(const char* root, const char* rel);
-char* karat_rename_path(const char* root, const char* from, const char* to);
-char* karat_search(const char* root, const char* rel, const char* query);
-int karat_init();
-void karat_shutdown();
-#ifdef __cplusplus
-}
-#endif
-"@ | Out-File -Encoding utf8 release-dll/karat.h
+          Copy-Item karat.h release-dll/
           Compress-Archive -Path release-dll/* -DestinationPath karat-dll-windows.zip
       - uses: actions/upload-artifact@v4
         with:
           name: dll-windows
           path: karat-dll-windows.zip
-
-  build-tauri-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./src-tauri -> target
-      - name: Install frontend
-        run: npm run setup
-        continue-on-error: true
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tauriScript: npm run tauri:build
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: tauri-windows
-          path: src-tauri/target/release/bundle/
-          if-no-files-found: warn
 
   build-cross:
     strategy:
@@ -108,7 +60,7 @@ void karat_shutdown();
           if-no-files-found: warn
 
   github-release:
-    needs: [build-dll-windows, build-tauri-windows, build-cross]
+    needs: [build-dll-windows, build-cross]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -123,8 +75,6 @@ void karat_shutdown();
         with:
           files: |
             artifacts/**/*.zip
-            artifacts/**/*.exe
-            artifacts/**/*.msi
             artifacts/**/libkarat.*
             artifacts/**/*.so
             artifacts/**/*.dylib

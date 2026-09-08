@@ -13,62 +13,28 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-
-      - name: Rust cache
-        uses: Swatinem/rust-cache@v2
-
+      - uses: Swatinem/rust-cache@v2
       - name: Build Karat core DLL
         run: cargo build --release --lib
-
-      - name: Build Karat desktop DLL (Tauri cdylib)
+      - name: Build desktop DLL
         run: cargo build --release -p karat-desktop --lib
         continue-on-error: true
-
       - name: List artifacts
         shell: pwsh
         run: |
           Get-ChildItem -Recurse target/release/*.dll,target/release/*.lib -ErrorAction SilentlyContinue | Format-Table
-          Get-ChildItem src-tauri/target/release/*.dll -ErrorAction SilentlyContinue | Format-Table
-
       - name: Prepare DLL package
         shell: pwsh
         run: |
           mkdir dist-dll
           Copy-Item target/release/karat.dll dist-dll/ -ErrorAction SilentlyContinue
           Copy-Item target/release/karat.lib dist-dll/ -ErrorAction SilentlyContinue
-          Copy-Item target/release/karat.dll.lib dist-dll/ -ErrorAction SilentlyContinue
-          if (Test-Path src-tauri/target/release/karat_desktop.dll) {
-            Copy-Item src-tauri/target/release/karat_desktop.dll dist-dll/
-          }
-          @"
-// karat.h - Auto generated header for Karat DLL
-#pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
-void karat_free_string(char* s);
-char* karat_version();
-char* karat_health();
-char* karat_list_dir(const char* root, const char* rel);
-char* karat_read_file(const char* root, const char* rel);
-char* karat_save_file(const char* root, const char* rel, const char* content);
-char* karat_make_dir(const char* root, const char* rel);
-char* karat_delete_path(const char* root, const char* rel);
-char* karat_rename_path(const char* root, const char* from, const char* to);
-char* karat_search(const char* root, const char* rel, const char* query);
-int karat_init();
-void karat_shutdown();
-#ifdef __cplusplus
-}
-#endif
-"@ | Out-File -Encoding utf8 dist-dll/karat.h
+          Copy-Item karat.h dist-dll/ -ErrorAction SilentlyContinue
           Compress-Archive -Path dist-dll/* -DestinationPath karat-windows-x64-dll.zip
-
       - name: Upload Windows DLL artifact
         uses: actions/upload-artifact@v4
         with:
@@ -107,11 +73,8 @@ void karat_shutdown();
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install deps for Tauri (optional)
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - name: Build SO
         run: cargo build --release --lib
       - name: List
@@ -130,8 +93,7 @@ void karat_shutdown();
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build dylib
         run: cargo build --release --lib
