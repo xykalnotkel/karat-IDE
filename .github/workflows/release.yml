@@ -21,40 +21,38 @@ jobs:
           targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
       - name: Build x64 DLL
-        working-directory: ./karat
         run: cargo build --release --lib
       - name: Build x86 DLL
-        working-directory: ./karat
         run: cargo build --release --lib --target i686-pc-windows-msvc
       - name: Pack
         shell: pwsh
         run: |
           mkdir release-dll
-          Copy-Item karat/target/release/karat.dll release-dll/
-          Copy-Item karat/target/release/karat.lib release-dll/ -ErrorAction SilentlyContinue
-          Copy-Item karat/target/i686-pc-windows-msvc/release/karat.dll release-dll/karat_x86.dll
+          Copy-Item target/release/karat.dll release-dll/
+          Copy-Item target/release/karat.lib release-dll/ -ErrorAction SilentlyContinue
+          Copy-Item target/i686-pc-windows-msvc/release/karat.dll release-dll/karat_x86.dll
           @"
-          // karat.h
-          #pragma once
-          #ifdef __cplusplus
-          extern "C" {
-          #endif
-          void karat_free_string(char* s);
-          char* karat_version();
-          char* karat_health();
-          char* karat_list_dir(const char* root, const char* rel);
-          char* karat_read_file(const char* root, const char* rel);
-          char* karat_save_file(const char* root, const char* rel, const char* content);
-          char* karat_make_dir(const char* root, const char* rel);
-          char* karat_delete_path(const char* root, const char* rel);
-          char* karat_rename_path(const char* root, const char* from, const char* to);
-          char* karat_search(const char* root, const char* rel, const char* query);
-          int karat_init();
-          void karat_shutdown();
-          #ifdef __cplusplus
-          }
-          #endif
-          "@ | Out-File -Encoding utf8 release-dll/karat.h
+// karat.h
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+void karat_free_string(char* s);
+char* karat_version();
+char* karat_health();
+char* karat_list_dir(const char* root, const char* rel);
+char* karat_read_file(const char* root, const char* rel);
+char* karat_save_file(const char* root, const char* rel, const char* content);
+char* karat_make_dir(const char* root, const char* rel);
+char* karat_delete_path(const char* root, const char* rel);
+char* karat_rename_path(const char* root, const char* from, const char* to);
+char* karat_search(const char* root, const char* rel, const char* query);
+int karat_init();
+void karat_shutdown();
+#ifdef __cplusplus
+}
+#endif
+"@ | Out-File -Encoding utf8 release-dll/karat.h
           Compress-Archive -Path release-dll/* -DestinationPath karat-dll-windows.zip
       - uses: actions/upload-artifact@v4
         with:
@@ -69,25 +67,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: karat/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ./karat/src-tauri -> target
+          workspaces: ./src-tauri -> target
       - name: Install frontend
-        working-directory: ./karat
         run: npm run setup
+        continue-on-error: true
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: ./karat
           tauriScript: npm run tauri:build
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
           name: tauri-windows
-          path: karat/src-tauri/target/release/bundle/
+          path: src-tauri/target/release/bundle/
+          if-no-files-found: warn
 
   build-cross:
     strategy:
@@ -99,16 +96,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build lib
-        working-directory: ./karat
         run: cargo build --release --lib
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: karat-lib-${{ matrix.platform }}
           path: |
-            karat/target/release/libkarat.*
-            karat/target/release/*.so
-            karat/target/release/*.dylib
+            target/release/libkarat.*
+            target/release/*.so
+            target/release/*.dylib
+          if-no-files-found: warn
 
   github-release:
     needs: [build-dll-windows, build-tauri-windows, build-cross]

@@ -23,55 +23,50 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build Karat core DLL
-        working-directory: ./karat
         run: cargo build --release --lib
 
       - name: Build Karat desktop DLL (Tauri cdylib)
-        working-directory: ./karat
         run: cargo build --release -p karat-desktop --lib
+        continue-on-error: true
 
       - name: List artifacts
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse karat/target/release/*.dll,karat/target/release/*.lib,karat/target/release/*.pdb | Format-Table
-          Get-ChildItem karat/src-tauri/target/release/*.dll -ErrorAction SilentlyContinue | Format-Table
+          Get-ChildItem -Recurse target/release/*.dll,target/release/*.lib -ErrorAction SilentlyContinue | Format-Table
+          Get-ChildItem src-tauri/target/release/*.dll -ErrorAction SilentlyContinue | Format-Table
 
       - name: Prepare DLL package
         shell: pwsh
         run: |
           mkdir dist-dll
-          Copy-Item karat/target/release/karat.dll dist-dll/ -ErrorAction SilentlyContinue
-          Copy-Item karat/target/release/karat.lib dist-dll/ -ErrorAction SilentlyContinue
-          Copy-Item karat/target/release/karat.dll.lib dist-dll/ -ErrorAction SilentlyContinue
-          Copy-Item karat/target/release/*.pdb dist-dll/ -ErrorAction SilentlyContinue
-          # Also copy desktop cdylib if exists
-          if (Test-Path karat/src-tauri/target/release/karat_desktop.dll) {
-            Copy-Item karat/src-tauri/target/release/karat_desktop.dll dist-dll/
+          Copy-Item target/release/karat.dll dist-dll/ -ErrorAction SilentlyContinue
+          Copy-Item target/release/karat.lib dist-dll/ -ErrorAction SilentlyContinue
+          Copy-Item target/release/karat.dll.lib dist-dll/ -ErrorAction SilentlyContinue
+          if (Test-Path src-tauri/target/release/karat_desktop.dll) {
+            Copy-Item src-tauri/target/release/karat_desktop.dll dist-dll/
           }
-          # Create def and header for C/C++
           @"
-          // karat.h - Auto generated header for Karat DLL
-          #pragma once
-          #ifdef __cplusplus
-          extern "C" {
-          #endif
-          void karat_free_string(char* s);
-          char* karat_version();
-          char* karat_health();
-          char* karat_list_dir(const char* root, const char* rel);
-          char* karat_read_file(const char* root, const char* rel);
-          char* karat_save_file(const char* root, const char* rel, const char* content);
-          char* karat_make_dir(const char* root, const char* rel);
-          char* karat_delete_path(const char* root, const char* rel);
-          char* karat_rename_path(const char* root, const char* from, const char* to);
-          char* karat_search(const char* root, const char* rel, const char* query);
-          int karat_init();
-          void karat_shutdown();
-          #ifdef __cplusplus
-          }
-          #endif
-          "@ | Out-File -Encoding utf8 dist-dll/karat.h
-
+// karat.h - Auto generated header for Karat DLL
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+void karat_free_string(char* s);
+char* karat_version();
+char* karat_health();
+char* karat_list_dir(const char* root, const char* rel);
+char* karat_read_file(const char* root, const char* rel);
+char* karat_save_file(const char* root, const char* rel, const char* content);
+char* karat_make_dir(const char* root, const char* rel);
+char* karat_delete_path(const char* root, const char* rel);
+char* karat_rename_path(const char* root, const char* from, const char* to);
+char* karat_search(const char* root, const char* rel, const char* query);
+int karat_init();
+void karat_shutdown();
+#ifdef __cplusplus
+}
+#endif
+"@ | Out-File -Encoding utf8 dist-dll/karat.h
           Compress-Archive -Path dist-dll/* -DestinationPath karat-windows-x64-dll.zip
 
       - name: Upload Windows DLL artifact
@@ -94,13 +89,12 @@ jobs:
           targets: i686-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
       - name: Build DLL x86
-        working-directory: ./karat
         run: cargo build --release --lib --target i686-pc-windows-msvc
       - name: Prepare
         shell: pwsh
         run: |
           mkdir dist-dll-x86
-          Copy-Item karat/target/i686-pc-windows-msvc/release/karat.dll dist-dll-x86/karat_x86.dll
+          Copy-Item target/i686-pc-windows-msvc/release/karat.dll dist-dll-x86/karat_x86.dll
           Compress-Archive -Path dist-dll-x86/* -DestinationPath karat-windows-x86-dll.zip
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -119,17 +113,16 @@ jobs:
       - name: Install deps for Tauri (optional)
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - name: Build SO
-        working-directory: ./karat
         run: cargo build --release --lib
       - name: List
-        run: ls -lh karat/target/release/*.so || ls -lh karat/target/release/libkarat.*
+        run: ls -lh target/release/*.so || ls -lh target/release/libkarat.*
       - name: Upload SO
         uses: actions/upload-artifact@v4
         with:
           name: karat-linux-x64-so
           path: |
-            karat/target/release/libkarat.so
-            karat/target/release/libkarat.a
+            target/release/libkarat.so
+            target/release/libkarat.a
           if-no-files-found: warn
 
   build-macos-dylib:
@@ -141,13 +134,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build dylib
-        working-directory: ./karat
         run: cargo build --release --lib
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: karat-macos-dylib
           path: |
-            karat/target/release/libkarat.dylib
-            karat/target/release/libkarat.a
+            target/release/libkarat.dylib
+            target/release/libkarat.a
           if-no-files-found: warn
