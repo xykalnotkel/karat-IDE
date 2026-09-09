@@ -1,6 +1,6 @@
 // Persistent UI state (tabs, theme, layout) in localStorage.
 
-export type SideView = 'explorer' | 'search' | 'git';
+export type SideView = 'explorer' | 'search' | 'git' | 'extensions';
 
 interface Persisted {
   tabs: string[];
@@ -26,7 +26,14 @@ class Store {
       const s = JSON.parse(raw) as Partial<Persisted>;
       if (Array.isArray(s.tabs)) this.tabs = s.tabs.filter((t) => typeof t === 'string');
       if (typeof s.active === 'string' || s.active === null) this.active = s.active ?? null;
-      if (s.view === 'explorer' || s.view === 'search' || s.view === 'git') this.view = s.view;
+      if (
+        s.view === 'explorer' ||
+        s.view === 'search' ||
+        s.view === 'git' ||
+        s.view === 'extensions'
+      ) {
+        this.view = s.view;
+      }
       if (s.theme === 'dark' || s.theme === 'light') this.theme = s.theme;
       if (typeof s.panel === 'boolean') this.panel = s.panel;
       if (typeof s.sidebar === 'boolean') this.sidebar = s.sidebar;

@@ -1,0 +1,37 @@
+name: Bug report
+description: Report reproducible Karat behavior
+title: "bug: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, Linux, Android 64-bit, Android 32-bit, Web]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Karat version
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: Describe the smallest reliable reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      render: shell

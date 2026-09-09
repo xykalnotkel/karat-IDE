@@ -1,7 +1,7 @@
 {
   "name": "karat",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "setup": "npm install && npm --prefix frontend install",
     "web:dev": "npm --prefix frontend run dev",
@@ -14,5 +14,16 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
+  },
+  "description": "A quiet, lightweight, community-first IDE developed by XySpace",
+  "author": "XySpace and Karat contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xykalnotkel/karat-IDE.git"
+  },
+  "homepage": "https://github.com/xykalnotkel/karat-IDE#readme",
+  "bugs": {
+    "url": "https://github.com/xykalnotkel/karat-IDE/issues"
   }
 }

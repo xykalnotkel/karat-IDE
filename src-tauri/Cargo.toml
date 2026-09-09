@@ -1,7 +1,11 @@
 [package]
 name = "karat-desktop"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+description = "Karat desktop and mobile shell, developed by XySpace"
+license = "MIT"
+authors = ["XySpace and Karat contributors"]
+repository = "https://github.com/xykalnotkel/karat-IDE"
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]

@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose an improvement to Karat
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should Karat solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Platform scope
+      multiple: true
+      options: [Windows, Linux, Android, Web, Extension API]

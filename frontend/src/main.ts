@@ -14,6 +14,7 @@ import { Palette, Command } from './palette';
 import { StatusBar } from './statusbar';
 import { runnerFor } from './lang';
 import { loadWorkspaceExtensions } from './extensions';
+import { ExtensionsView } from './extensionsView';
 
 // ---------- theme ----------
 
@@ -45,10 +46,11 @@ function showShortcuts(): void {
 function showAbout(): void {
   showModal(
     'About Karat',
-    `<p><b>Karat v0.1.0</b> — a lightweight IDE crafted with Rust.</p>
-     <p>Desktop: Tauri + Rust core with files, search, Git, and PTY terminal.<br>
+    `<p><b>Karat v0.2.0</b> — a quiet, lightweight IDE crafted with Rust.</p>
+     <p>Developed by <b>XySpace</b> with the open-source community.</p>
+     <p>Desktop: Tauri + Rust core with files, extensions, Git, and PTY terminal.<br>
      Android: private-workspace editor and search. Web: local Axum backend.</p>
-     <p>Roadmap: Language Server Protocol, debugging (DAP), extensions.</p>`,
+     <p>MIT licensed · community-first · offline capable.</p>`,
   );
 }
 
@@ -73,7 +75,7 @@ async function ensureRoot(): Promise<void> {
     }
   }
   // First run (or a folder was moved): start in a guaranteed writable user
-  // location. On Windows this is Documents/Karat Workspace.
+  // location. On Windows this is C:\\Users\\<name>\\Karat Workspace.
   const dir = await invoke<string>('default_root');
   await invoke('set_root', { path: dir });
   localStorage.setItem('karat:root', dir);
@@ -90,6 +92,7 @@ function start(): void {
   const explorer = new Explorer(document.getElementById('view-explorer')!);
   const searchView = new SearchView(document.getElementById('view-search')!);
   const gitView = new GitView(document.getElementById('view-git')!);
+  const extensionsView = new ExtensionsView(document.getElementById('view-extensions')!);
   const terminal = new TerminalView(document.getElementById('terminal')!);
   const palette = new Palette();
   const status = new StatusBar(document.getElementById('statusbar')!);
@@ -137,6 +140,7 @@ function start(): void {
       palette.reloadFiles();
       await explorer.refresh();
       await gitView.refresh();
+      await extensionsView.refresh();
       await refreshTitle();
       toast('Opened: ' + sel, 'ok');
     } catch (e) {
@@ -150,7 +154,12 @@ function start(): void {
   const VIEWS: { id: SideView; icon: string; title: string }[] = [
     { id: 'explorer', icon: 'files', title: 'Explorer' },
     { id: 'search', icon: 'search', title: 'Search (Ctrl+Shift+F)' },
-    ...(isMobile ? [] : [{ id: 'git' as SideView, icon: 'git', title: 'Source Control' }]),
+    ...(isMobile
+      ? []
+      : [
+          { id: 'git' as SideView, icon: 'git', title: 'Source Control' },
+          { id: 'extensions' as SideView, icon: 'extensions', title: 'Extensions' },
+        ]),
   ];
 
   function setSidebar(show: boolean): void {
@@ -176,14 +185,17 @@ function start(): void {
       document.getElementById(`view-${v.id}`)!.hidden = store.view !== v.id;
     }
     // Keep the hidden git section out of the way on mobile.
-    if (isMobile) document.getElementById('view-git')!.hidden = true;
+    if (isMobile) {
+      document.getElementById('view-git')!.hidden = true;
+      document.getElementById('view-extensions')!.hidden = true;
+    }
     activitybar.querySelectorAll('.act-btn[data-view]').forEach((b) =>
       b.classList.toggle('active', (b as HTMLElement).dataset.view === store.view),
     );
   }
 
   function setView(v: SideView): void {
-    if (v === 'git' && isMobile) return;
+    if ((v === 'git' || v === 'extensions') && isMobile) return;
     if (store.view === v && !sidebar.classList.contains('closed')) {
       setSidebar(false);
       return;
@@ -352,7 +364,12 @@ function start(): void {
             searchView.focus();
           },
         },
-        ...(isMobile ? [] : [{ label: 'Source Control', action: () => setView('git') }]),
+        ...(isMobile
+          ? []
+          : [
+              { label: 'Source Control', action: () => setView('git') },
+              { label: 'Extensions', action: () => setView('extensions') },
+            ]),
         { sep: true },
         { label: 'Toggle Sidebar', shortcut: 'Ctrl+B', action: () => setSidebar(!store.sidebar) },
         { label: 'Toggle Panel', shortcut: 'Ctrl+`', action: () => setPanel(!store.panel) },
@@ -476,7 +493,12 @@ function start(): void {
         searchView.focus();
       },
     },
-    ...(isMobile ? [] : [{ id: 'view.git', label: 'View: Show Source Control', run: () => setView('git') }]),
+    ...(isMobile
+      ? []
+      : [
+          { id: 'view.git', label: 'View: Show Source Control', run: () => setView('git') },
+          { id: 'view.extensions', label: 'View: Show Extensions', run: () => setView('extensions') },
+        ]),
     {
       id: 'view.sidebar',
       label: 'View: Toggle Sidebar',

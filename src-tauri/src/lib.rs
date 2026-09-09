@@ -51,9 +51,9 @@ fn set_root(state: State<AppState>, path: String) -> Result<String, String> {
     Ok(canon.to_string_lossy().into_owned())
 }
 
-/// A writable first-run workspace. Desktop uses the user's Documents folder
-/// (`C:\\Users\\<name>\\Documents\\Karat Workspace` on Windows); mobile uses
-/// private app storage. Users can still switch to any folder on desktop.
+/// A writable first-run workspace. Desktop uses the user's profile folder
+/// (`C:\\Users\\<name>\\Karat Workspace` on Windows); mobile uses private app
+/// storage. Users can still switch to any folder on desktop.
 #[tauri::command]
 fn default_root(app: tauri::AppHandle) -> Result<String, String> {
     #[cfg(any(target_os = "android", target_os = "ios"))]
@@ -62,7 +62,7 @@ fn default_root(app: tauri::AppHandle) -> Result<String, String> {
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let base = app
         .path()
-        .document_dir()
+        .home_dir()
         .or_else(|_| app.path().app_data_dir())
         .map_err(|e| e.to_string())?;
 
@@ -110,6 +110,96 @@ fn search_files(
     path: String,
 ) -> Result<core_fs::SearchResults, String> {
     core_fs::search(&root_of(&state), &path, &q).map_err(msg)
+}
+
+// ---------- workspace extensions ----------
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn copy_extension_tree(
+    source: &std::path::Path,
+    destination: &std::path::Path,
+) -> Result<(), String> {
+    const MAX_FILES: usize = 2_000;
+    const MAX_BYTES: u64 = 50 * 1024 * 1024;
+    let mut stack = vec![(source.to_path_buf(), destination.to_path_buf())];
+    let mut files = 0usize;
+    let mut bytes = 0u64;
+
+    while let Some((from, to)) = stack.pop() {
+        std::fs::create_dir_all(&to).map_err(|e| e.to_string())?;
+        for entry in std::fs::read_dir(&from).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let kind = entry.file_type().map_err(|e| e.to_string())?;
+            if kind.is_symlink() {
+                return Err("extension folders cannot contain symbolic links".to_string());
+            }
+            let target = to.join(entry.file_name());
+            if kind.is_dir() {
+                stack.push((entry.path(), target));
+            } else if kind.is_file() {
+                files += 1;
+                bytes += entry.metadata().map_err(|e| e.to_string())?.len();
+                if files > MAX_FILES || bytes > MAX_BYTES {
+                    return Err("extension exceeds the 2,000 file / 50 MB safety limit".to_string());
+                }
+                std::fs::copy(entry.path(), target).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn install_extension(state: State<AppState>, source: String) -> Result<String, String> {
+    let source = PathBuf::from(source)
+        .canonicalize()
+        .map_err(|e| e.to_string())?;
+    if !source.is_dir() {
+        return Err("select an extension folder".to_string());
+    }
+    let manifest_path = source.join("extension.json");
+    let manifest = std::fs::read_to_string(&manifest_path)
+        .map_err(|_| "extension.json is required in the selected folder".to_string())?;
+    let value: serde_json::Value =
+        serde_json::from_str(&manifest).map_err(|e| format!("invalid extension.json: {e}"))?;
+    let id = value
+        .get("id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "extension.json requires a string id".to_string())?;
+    if id.is_empty()
+        || id.len() > 80
+        || !id
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || c == b'-' || c == b'_')
+    {
+        return Err("extension id may only contain letters, numbers, '-' and '_'".to_string());
+    }
+    if value.get("name").and_then(|v| v.as_str()).is_none() {
+        return Err("extension.json requires a string name".to_string());
+    }
+
+    let root = root_of(&state);
+    let extensions = core_fs::safe_join(&root, ".karat/extensions").map_err(msg)?;
+    std::fs::create_dir_all(&extensions).map_err(|e| e.to_string())?;
+    let destination = core_fs::safe_join(&root, &format!(".karat/extensions/{id}")).map_err(msg)?;
+    let staging = extensions.join(format!(".{id}.installing"));
+    if staging.exists() {
+        std::fs::remove_dir_all(&staging).map_err(|e| e.to_string())?;
+    }
+    copy_extension_tree(&source, &staging)?;
+    if destination.exists() {
+        std::fs::remove_dir_all(&destination).map_err(|e| e.to_string())?;
+    }
+    std::fs::rename(&staging, &destination).map_err(|e| e.to_string())?;
+    Ok(id.to_string())
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn install_extension(state: State<AppState>, source: String) -> Result<String, String> {
+    let _ = (&state, source);
+    Err("installing extension folders is desktop-only".to_string())
 }
 
 // ---------- git (desktop only — phones have no `git` CLI) ----------
@@ -308,6 +398,7 @@ pub fn run() {
             delete_path,
             rename_path,
             search_files,
+            install_extension,
             git_status,
             git_add,
             git_commit,

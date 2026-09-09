@@ -12,7 +12,8 @@ Include affected versions, reproduction steps, impact, and a suggested fix when 
 - Web mode listens on `127.0.0.1` by default.
 - Binding web mode to a non-loopback address requires `KARAT_AUTH_TOKEN` with at least 16 URL-safe characters.
 - Filesystem operations are restricted to the workspace root and reject path traversal and symbolic-link escapes.
-- Never commit API keys or environment files. Use repository/environment secrets in CI.
+- Extension installation rejects symbolic links and limits copied content. Declarative terminal commands still execute with the user's permissions, but only after an explicit action; review manifests before running them.
+- Never commit API keys, signing material, or environment files. Use repository/environment secrets in CI.
 
 ## Supported versions
 

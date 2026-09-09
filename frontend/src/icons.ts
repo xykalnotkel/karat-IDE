@@ -22,6 +22,8 @@ const P: Record<string, string> = {
   file: `<path d="M4.5 1.5h4l3 3v10h-7z"/><path d="M8.5 1.5v3h3"/>`,
   folder: `<path d="M1.5 4a1 1 0 0 1 1-1h3l1.5 2h5.5a1 1 0 0 1 1 1v5.5a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1z"/>`,
   play: `<path d="M5 2.5l8 5.5-8 5.5z"/>`,
+  extensions: `<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><path d="M11.5 9v5M9 11.5h5"/>`,
+  download: `<path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/>`,
 };
 
 export function icon(name: string, size = 16): string {

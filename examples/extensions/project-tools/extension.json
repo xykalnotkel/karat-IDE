@@ -1,0 +1,19 @@
+{
+  "id": "project-tools",
+  "name": "Project Tools",
+  "version": "1.0.0",
+  "description": "Example commands for a JavaScript or TypeScript workspace.",
+  "author": "XySpace",
+  "commands": [
+    {
+      "id": "test",
+      "title": "Run tests",
+      "terminal": "npm test"
+    },
+    {
+      "id": "check",
+      "title": "Run typecheck",
+      "terminal": "npm run typecheck"
+    }
+  ]
+}

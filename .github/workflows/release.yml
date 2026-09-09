@@ -9,7 +9,7 @@ on:
       version:
         description: "Release version"
         required: false
-        default: "v0.1.0-manual"
+        default: "v0.2.0-manual"
 
 jobs:
   build-dll-windows:

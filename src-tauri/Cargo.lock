@@ -1796,7 +1796,7 @@ dependencies = [
 
 [[package]]
 name = "karat"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -1812,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "karat-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "karat",
  "serde",

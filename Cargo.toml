@@ -1,10 +1,12 @@
 [package]
 name = "karat"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Karat — a lightweight, fast IDE written in Rust"
+description = "A quiet, lightweight, community-first IDE developed by XySpace"
+repository = "https://github.com/xykalnotkel/karat-IDE"
+homepage = "https://github.com/xykalnotkel/karat-IDE"
 license = "MIT"
-authors = ["Karat Team"]
+authors = ["XySpace and Karat contributors"]
 
 [lib]
 name = "karat"

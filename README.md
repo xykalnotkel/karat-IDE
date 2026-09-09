@@ -1,218 +1,179 @@
-# Karat 🦀
+<p align="center">
+  <img src="assets/xyspace-karat-logo.png" alt="Karat logo" width="128">
+</p>
 
-**Karat** adalah IDE desktop ringan dan cepat yang ditulis dengan **Rust + Tauri** —
-terinspirasi dari VS Code, tapi dengan backend native yang ramping.
+# Karat
 
-> Status: **v0.1.0** — aplikasi desktop jadi. Build Windows menghasilkan
-> `Karat-setup.exe` (NSIS) + `Karat.msi` (WiX).
+**Karat is a community-first lightweight IDE developed by [XySpace](https://github.com/xykalnotkel).** It combines a Rust/Tauri core with Monaco and a quiet, Surface-friendly interface. The project targets Windows, Linux, Android, and an optional browser-hosted mode.
 
----
+> **Status: v0.2.0 alpha.** Karat is useful today, but APIs and storage formats may still change. Android and browser mode intentionally provide fewer native capabilities than desktop.
 
-## ✨ Fitur
+## Features
 
-| Area | Fitur |
+| Area | Capability |
 |---|---|
-| 📝 Editor | Monaco Editor (mesin yang sama dengan VS Code), 40+ bahasa, minimap, multi-tab, dirty indicator, sticky scroll |
-| 📁 Explorer | Tree file, Open Folder (dialog native), new/rename/delete |
-| 🔍 Search | Cari teks ke seluruh workspace |
-| 💻 Terminal | PTY asli + xterm.js, profile PowerShell/cmd/WSL/Bash/Zsh/Fish/Nushell |
-| ▶️ Run | "Run Active File" — otomatis `cargo run` / `npm run dev` / `python3` / `node` / … |
-| ⎇ Git | Branch di statusbar, changes (staged/unstaged/untracked), stage, commit |
-| ⌨️ Palette | Quick open fuzzy (`Ctrl+P`) + command palette (`Ctrl+Shift+P`) |
-| 🎨 Tema | Dark & light mode |
+| Editor | Monaco, 40+ languages, tabs, minimap, dirty state, sticky scroll |
+| Workspace | Explorer, native Open Folder, create, rename, delete, full-text search |
+| Terminal | Native PTY with detected PowerShell, cmd, WSL, Bash, Zsh, Fish, Nushell, and POSIX profiles |
+| Run | Context-aware commands for Rust, Node.js, Python, and other common files |
+| Git | Branch/status view, staging, and commits through the installed Git CLI |
+| Navigation | Fuzzy Quick Open and Command Palette |
+| Extensions | Named-folder declarative extensions with explicit terminal commands |
+| Experience | Dark/light themes, quiet chrome, keyboard navigation, offline desktop assets |
 
----
+## Quick start
 
-## 🪟 Build untuk Windows (.exe + .msi)
+Prerequisites are **Node.js 20+** and **Rust stable**.
 
-### Prasyarat (sekali saja)
-
-1. **Rust** — install via [rustup](https://rustup.rs).
-2. **Microsoft C++ Build Tools** — hanya toolchain/linker untuk **mengompilasi** aplikasi Rust target Windows. Karat tidak dibuat dengan Visual Studio dan pengguna installer tidak perlu memasang Visual Studio.
-3. **Node.js 20+** — hanya untuk proses build frontend.
-
-Karat menggunakan Tauri WebView2, tetapi seluruh UI, Monaco, CSS, dan JavaScript dibundel lokal. Installer Windows menyertakan WebView2 Offline Installer sehingga instalasi dan penggunaan editor tidak membutuhkan internet.
-
-> WiX & NSIS otomatis diunduh oleh Tauri saat build pertama. Signing/publish
-> ke Microsoft Store butuh sertifikat (opsional, nanti saja).
-
-### Build installer
-
-```powershell
-git clone <repo-karat>
-cd karat
-
-npm run setup        # install deps root + frontend (sekali saja)
-npm run tauri:build  # → .exe + .msi
-```
-
-Hasilnya ada di:
-
-```
-src-tauri\target\release\bundle\nsis\Karat_0.1.0_x64-setup.exe
-src-tauri\target\release\bundle\msi\Karat_0.1.0_x64_en-US.msi
-```
-
-### Mode dev di Windows (hot-reload UI)
-
-```powershell
+```bash
+git clone https://github.com/xykalnotkel/karat-IDE.git
+cd karat-IDE
+npm run setup
+npm run web:build
+cargo test --all-targets
 npm run tauri:dev
 ```
 
----
+## Platform builds
 
-## 🐧 Build Linux
+### Windows
 
-Prasyarat Debian/Ubuntu:
+Building on Windows additionally requires Microsoft C++ Build Tools as the Rust linker/toolchain. Karat itself is built from scratch with Rust, TypeScript, Monaco, and Tauri; Visual Studio is **not** an application/runtime dependency and installer users do not need it.
+
+```powershell
+npm run setup
+npm run tauri:build
+```
+
+Tauri creates NSIS `.exe` and WiX `.msi` installers under `src-tauri\target\release\bundle`. WebView2's offline installer and all frontend assets are bundled, so normal editor use can remain offline.
+
+Official CI artifacts may be cryptographically self-signed by the project, but Windows can still display **Unknown Publisher** until XySpace uses a publicly trusted code-signing certificate.
+
+### Linux
+
+Debian/Ubuntu build prerequisites:
 
 ```bash
 sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
   libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+npm run setup
+npm run tauri:build
 ```
 
-Lalu jalankan `npm run setup` → `npm run tauri:build`. Build Linux menghasilkan `.deb`, `.rpm`, dan `.AppImage`.
+Release builds produce `.deb`, `.rpm`, and `.AppImage` artifacts.
 
-## 🤖 Build Android
+### Android
 
-Android membutuhkan Android Studio/SDK, NDK 27, Java 17, dan target Rust Android. Setelah environment Android siap:
+Android builds require Android Studio/SDK, NDK 27, Java 17, and the Rust Android targets.
 
 ```bash
 npm run setup
-npm run android:init       # hanya jika src-tauri/gen/android belum ada
-npm run android:build      # APK + AAB untuk ARM 32-bit dan ARM 64-bit
+npm run android:init       # only if src-tauri/gen/android is absent
+npm run android:build      # APK + AAB, ARM 32-bit and ARM 64-bit
 ```
 
-CI menghasilkan universal APK/AAB self-signed yang memuat `armeabi-v7a` (32-bit) dan `arm64-v8a` (64-bit). `minSdk 24` berarti perangkat Android 7 hingga Android terbaru—termasuk Android API 32—didukung.
+CI's universal APK/AAB contains `armeabi-v7a` and `arm64-v8a`. `minSdk 24` supports Android 7 and newer. Android uses private app storage; editing, exploring, saving, and searching are available, while Git CLI and native PTY features are hidden.
 
-Build mobile menggunakan private app storage. Editor, explorer, save, dan search tersedia; Git CLI, PTY terminal, serta runner disembunyikan karena tidak tersedia secara native di Android.
-
-## 🌐 Mode web (opsional, buat dev/preview)
-
-Backend yang sama tetap bisa jalan sebagai server web:
+### Web mode
 
 ```bash
-cargo run                  # backend :3000 (single-port, serve frontend/dist)
-# atau frontend terpisah:
-cd frontend && npm run dev # UI :5173 (proxy /api + /ws ke backend)
+npm run web:build
+cargo run                  # backend and frontend on http://127.0.0.1:3000
 ```
 
-| Env var | Default | Fungsi |
+| Variable | Default | Purpose |
 |---|---|---|
-| `KARAT_ROOT` | `./workspace` | Folder workspace web |
-| `KARAT_HOST` | `127.0.0.1` | IP listener backend web |
-| `KARAT_PORT` | `3000` | Port backend web |
-| `KARAT_AUTH_TOKEN` | kosong | Wajib (minimal 16 karakter URL-safe) jika host bukan loopback |
+| `KARAT_ROOT` | `./workspace` | Web workspace directory |
+| `KARAT_HOST` | `127.0.0.1` | Listener address |
+| `KARAT_PORT` | `3000` | Listener port |
+| `KARAT_AUTH_TOKEN` | empty | Required URL-safe token (16+ characters) off loopback |
 
-Web mode aman secara default karena hanya menerima koneksi localhost. Untuk akses LAN/container:
+For LAN/container access, set a strong random token and use HTTPS through a reverse proxy. Do not expose development mode directly to the public internet.
 
-```bash
-KARAT_HOST=0.0.0.0 KARAT_AUTH_TOKEN='ganti-dengan-token-random-panjang' cargo run
-```
+## Workspace location
 
-Buka `http://server:3000/?token=ganti-dengan-token-random-panjang`. Token disimpan hanya di `sessionStorage` dan langsung dihapus dari address bar. Jangan mengekspos web mode langsung ke internet; tetap gunakan HTTPS/reverse proxy.
+On first desktop launch, Karat creates a user-owned workspace:
 
-## 📂 Lokasi workspace
-
-Pada first run, Karat membuat lokasi writable milik user:
-
-- Windows: `C:\\Users\\<user>\\Documents\\Karat Workspace`
-- Linux: `~/Documents/Karat Workspace`
+- Windows: `C:\Users\<user>\Karat Workspace`
+- Linux and macOS: `~/Karat Workspace`
 - Android: private app storage
 
-Desktop tetap bisa membuka folder lain melalui **File → Open Folder**.
+This avoids placing a broad filesystem root or sensitive profile files inside the project view. Desktop users can choose another folder with **File → Open Folder**.
 
-## 🧩 Extension API v1
+## Extension API v1
 
-Karat memuat extension deklaratif dari `.karat/extensions.json` di workspace. Extension v1 dapat menambahkan command terminal tanpa mengeksekusi JavaScript asing secara otomatis:
+Desktop users can choose **Extensions → Install from Folder**. Karat validates and copies the selected named folder to:
+
+```text
+<workspace>/.karat/extensions/<extension-id>/extension.json
+```
+
+Example `extension.json`:
 
 ```json
 {
-  "extensions": [
-    {
-      "id": "project-tools",
-      "name": "Project Tools",
-      "version": "1.0.0",
-      "commands": [
-        { "id": "test", "title": "Run tests", "terminal": "npm test" }
-      ]
-    }
+  "id": "project-tools",
+  "name": "Project Tools",
+  "version": "1.0.0",
+  "description": "Useful commands for this project",
+  "author": "Example Author",
+  "commands": [
+    { "id": "test", "title": "Run tests", "terminal": "npm test" }
   ]
 }
 ```
 
-Command muncul di Command Palette. Dukungan themes, snippets, language grammars, dan adapter subset VS Code direncanakan bertahap; kompatibilitas seluruh VS Code Extension Host bukan klaim v1.
+IDs accept ASCII letters, numbers, `-`, and `_`. Installation rejects symbolic links and enforces count/size limits. Extension v1 never evaluates third-party JavaScript; a contributed terminal command runs only after an explicit user action. Review commands before running them.
 
-## 💻 Terminal profiles
+Karat does **not** claim full VS Code Extension Host compatibility. Themes, snippets, grammars, WASM, and carefully scoped adapters can be added incrementally without weakening this safety model.
 
-Karat mendeteksi shell yang benar-benar terpasang dan menyediakan selector profile. Kandidatnya mencakup PowerShell 7, Windows PowerShell, Command Prompt, WSL, Bash, Zsh, Fish, Nushell, dan POSIX shell. Android tidak menyediakan PTY native.
+## Architecture
 
----
-
-## 🏗️ Arsitektur
-
-```
+```text
 karat/
-├── src/                      # karat-core (Rust lib, dipakai web + desktop)
-│   ├── core_fs.rs            # Filesystem + search (path selalu divalidasi)
-│   ├── core_git.rs           # Git via CLI: status --porcelain, add, commit
-│   ├── core_term.rs          # Terminal: PTY native (portable-pty)
-│   ├── main.rs / fs_api.rs / git_api.rs / term.rs   # Server web Axum (opsional)
-├── src-tauri/                # Aplikasi desktop
-│   ├── src/lib.rs            # 16 Tauri commands (IPC, tanpa HTTP)
-│   ├── tauri.conf.json       # Konfig bundle: NSIS + MSI + updater-ready
-│   ├── capabilities/         # Izin minimal (dialog open-folder)
-│   └── icons/                # Icon installer (ico/icns/png, via `tauri icon`)
-├── frontend/                 # UI web (TypeScript + Vite, tanpa framework)
-│   └── src/
-│       ├── transport.ts      # Otomatis: Tauri IPC di desktop, HTTP di web
-│       ├── main.ts           # Wiring: menu, shortcut, Open Folder, tema
-│       ├── editorView.ts     # Monaco + tab management
-│       └── terminalView.ts / explorer.ts / searchView.ts / gitView.ts / …
-└── workspace/                # Folder demo
+├── src/          Rust core and optional Axum web server
+├── src-tauri/    Desktop/mobile Tauri application and native IPC
+├── frontend/     Framework-free TypeScript UI using Monaco and xterm.js
+├── assets/       XySpace/Karat source branding
+└── workspace/    Small demonstration workspace
 ```
 
-**Kenapa satu core untuk dua target?** Seluruh logika (file, git, terminal)
-ditulis sekali di `karat-core`. Versi desktop memanggilnya via Tauri IPC
-(tanpa overhead HTTP), versi web via Axum — UI-nya 100% sama.
+Desktop calls the Rust core through Tauri IPC without an HTTP server. Web mode exposes the same contained file, Git, and terminal services through authenticated Axum APIs.
 
-### Tauri commands (desktop IPC)
+## Contributing and collaboration
 
-| Command | Fungsi |
-|---|---|
-| `get_root` / `set_root` | Workspace aktif |
-| `list_dir`, `read_file`, `save_file` | Baca/tulis file |
-| `make_dir`, `delete_path`, `rename_path` | Kelola file/folder |
-| `search_files` | Grep rekursif |
-| `git_status`, `git_add`, `git_commit` | Git |
-| `term_spawn`, `term_input`, `term_resize`, `term_kill` | Terminal PTY (output via `Channel`) |
+Karat is suitable for open-source contributions and collaboration, especially in platform testing, accessibility, documentation, localization, terminal integration, and the declarative extension ecosystem.
 
----
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+- Use issues for reproducible bugs and scoped proposals; use Discussions for broader designs and collaboration.
+- Report vulnerabilities privately according to [SECURITY.md](SECURITY.md).
+- Governance and maintainer expectations are in [GOVERNANCE.md](GOVERNANCE.md).
+- Support routes are listed in [SUPPORT.md](SUPPORT.md); authorship is documented in [AUTHORS.md](AUTHORS.md).
+- Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
-## 🗺️ Roadmap
+GitHub Sponsors configuration is prepared for XySpace's repository owner. Sponsorship becomes active only if that account enrolls and enables it; no alternative payment destination is implied.
 
-- **v0.2 — Jadi IDE beneran**
-  - [ ] Language Server Protocol (autocomplete, diagnostics, hover, go-to-definition)
-  - [ ] Debug Adapter Protocol (breakpoint, step, variables)
-  - [ ] Panel Problems/Output, multi-terminal, diff view
-  - [ ] Settings UI + keybinding editor
-- **v0.3 — Ekosistem**
-  - [ ] Extension API (plugin JS/WASM)
-  - [ ] Auto-update (Tauri updater + signing)
-  - [ ] Git lanjutan: branch, push/pull
-  - [ ] Microsoft Store / Winget publish
+## Roadmap
 
----
+- Language Server Protocol, diagnostics, hover, and navigation
+- Problems/output panels, multiple terminals, and diff view
+- Settings and keybinding editors
+- Carefully sandboxed extension capabilities
+- Updater publication after stable signing and release-channel design
+- Advanced Git workflows and package-manager distribution
 
-## ⌨️ Shortcut
+## Shortcuts
 
-| Shortcut | Aksi |
+| Shortcut | Action |
 |---|---|
 | `Ctrl+S` | Save |
-| `Ctrl+P` | Quick open |
-| `Ctrl+Shift+P` | Command palette |
-| `Ctrl+Shift+F` | Search in files |
+| `Ctrl+P` | Quick Open |
+| `Ctrl+Shift+P` | Command Palette |
+| `Ctrl+Shift+F` | Search files |
 | `Ctrl+B` | Toggle sidebar |
 | ``Ctrl+` `` | Toggle terminal |
 | `Ctrl+F` | Find in file |
 
-Lisensi: MIT.
+## License and attribution
+
+Karat is available under the [MIT License](LICENSE). Copyright © 2026 XySpace and Karat contributors. “Karat,” its project identity, and official releases are developed and coordinated by **XySpace**.
