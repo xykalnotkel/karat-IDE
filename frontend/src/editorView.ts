@@ -4,6 +4,7 @@ import { store } from './state';
 import { el, esc, toast } from './ui';
 import { icon } from './icons';
 import { languageFor } from './lang';
+import { fileIconKind } from './fileIcons';
 
 export class EditorView {
   private editor: monaco.editor.IStandaloneCodeEditor;
@@ -11,6 +12,7 @@ export class EditorView {
   private savedVersion = new Map<string, number>();
 
   onCursor: (line: number, col: number, lang: string) => void = () => {};
+  onDocument: (path: string | null, content: string) => void = () => {};
 
   constructor(
     editorMount: HTMLElement,
@@ -51,6 +53,14 @@ export class EditorView {
 
   activePath(): string | null {
     return store.active;
+  }
+
+  activeContent(): string {
+    return this.editor.getModel()?.getValue() ?? '';
+  }
+
+  private emitDocument(): void {
+    this.onDocument(store.active, this.activeContent());
   }
 
   private activeLang(): string {
@@ -228,7 +238,7 @@ export class EditorView {
       );
       tab.title = t + (dirty ? ' (unsaved)' : '');
       tab.setAttribute('role', 'tab');
-      tab.innerHTML = `<span class="tab-name">${esc(name)}</span>`;
+      tab.innerHTML = `<span class="tab-file-icon ${fileIconKind(name, false)}">${icon('file', 14)}</span><span class="tab-name">${esc(name)}</span>`;
       const x = el('button', 'tab-close', dirty ? '<span class="dot"></span>' : icon('close', 14));
       x.title = 'Close';
       x.onclick = (ev) => {
@@ -243,5 +253,6 @@ export class EditorView {
       this.tabsEl.append(tab);
     }
     this.welcomeEl.hidden = store.tabs.length > 0;
+    this.emitDocument();
   }
 }

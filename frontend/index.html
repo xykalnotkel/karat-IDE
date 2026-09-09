@@ -32,12 +32,14 @@
       <section class="sideview" id="view-explorer"></section>
       <section class="sideview" id="view-search" hidden></section>
       <section class="sideview" id="view-git" hidden></section>
+      <section class="sideview" id="view-github" hidden></section>
       <section class="sideview" id="view-extensions" hidden></section>
     </aside>
     <main id="editor-group">
-      <div id="tabsbar"><div id="tabs" role="tablist"></div></div>
+      <div id="tabsbar"><div id="tabs" role="tablist"></div><button id="preview-toggle" class="icon-btn" title="Toggle HTML Live Preview" aria-label="Toggle HTML Live Preview"></button></div>
       <div id="editor-wrap">
         <div id="editor"></div>
+        <aside id="live-preview" hidden></aside>
         <div id="welcome" hidden>
           <div class="w-box">
             <img class="welcome-logo" src="/icon.png" width="76" height="76" alt="Karat by XySpace" />
@@ -64,6 +66,7 @@
           <div class="panel-tabs"><span class="panel-tab active">TERMINAL</span></div>
           <div class="panel-actions">
             <select id="term-profile" title="Terminal profile" aria-label="Terminal profile"></select>
+            <button id="termux-open" class="btn" title="Open Termux companion information" hidden>Termux</button>
             <button id="term-new" class="icon-btn" title="New terminal"></button>
             <button id="term-clear" class="icon-btn" title="Clear terminal"></button>
             <button id="panel-hide" class="icon-btn" title="Hide panel"></button>

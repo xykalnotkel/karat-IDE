@@ -15,6 +15,8 @@ import { StatusBar } from './statusbar';
 import { runnerFor } from './lang';
 import { loadWorkspaceExtensions } from './extensions';
 import { ExtensionsView } from './extensionsView';
+import { GitHubView } from './githubView';
+import { LivePreview } from './livePreview';
 
 // ---------- theme ----------
 
@@ -46,10 +48,11 @@ function showShortcuts(): void {
 function showAbout(): void {
   showModal(
     'About Karat',
-    `<p><b>Karat v0.2.0</b> — a quiet, lightweight IDE crafted with Rust.</p>
+    `<p><b>Karat v0.3.0</b> — a quiet, lightweight IDE crafted with Rust.</p>
      <p>Developed by <b>XySpace</b> with the open-source community.</p>
-     <p>Desktop: Tauri + Rust core with files, extensions, Git, and PTY terminal.<br>
-     Android: private-workspace editor and search. Web: local Axum backend.</p>
+     <p>Desktop: Tauri + Rust core with Git and a PTY terminal.<br>
+     Android: touch editor, Open VSX, GitHub, and a sandbox command console.<br>
+     Web: local Axum backend.</p>
      <p>MIT licensed · community-first · offline capable.</p>`,
   );
 }
@@ -92,8 +95,14 @@ function start(): void {
   const explorer = new Explorer(document.getElementById('view-explorer')!);
   const searchView = new SearchView(document.getElementById('view-search')!);
   const gitView = new GitView(document.getElementById('view-git')!);
+  new GitHubView(document.getElementById('view-github')!);
   const extensionsView = new ExtensionsView(document.getElementById('view-extensions')!);
   const terminal = new TerminalView(document.getElementById('terminal')!);
+  const preview = new LivePreview(document.getElementById('live-preview')!);
+  editor.onDocument = (path, content) => preview.update(path, content);
+  const previewToggle = document.getElementById('preview-toggle')!;
+  previewToggle.innerHTML = icon('preview', 17);
+  previewToggle.onclick = () => preview.toggle();
   const palette = new Palette();
   const status = new StatusBar(document.getElementById('statusbar')!);
 
@@ -150,16 +159,13 @@ function start(): void {
 
   // ----- sidebar / panel -----
 
-  // Git depends on the `git` CLI, which doesn't exist on mobile — hide it there.
+  // Local Git needs a desktop CLI. GitHub and Open VSX remain available on mobile.
   const VIEWS: { id: SideView; icon: string; title: string }[] = [
     { id: 'explorer', icon: 'files', title: 'Explorer' },
     { id: 'search', icon: 'search', title: 'Search (Ctrl+Shift+F)' },
-    ...(isMobile
-      ? []
-      : [
-          { id: 'git' as SideView, icon: 'git', title: 'Source Control' },
-          { id: 'extensions' as SideView, icon: 'extensions', title: 'Extensions' },
-        ]),
+    ...(!isMobile ? [{ id: 'git' as SideView, icon: 'git', title: 'Source Control' }] : []),
+    { id: 'github', icon: 'github', title: 'GitHub account' },
+    { id: 'extensions', icon: 'extensions', title: 'Extensions and Open VSX' },
   ];
 
   function setSidebar(show: boolean): void {
@@ -169,8 +175,7 @@ function start(): void {
   }
 
   function setPanel(show: boolean): void {
-    // Native PTYs are deliberately desktop/web-only.
-    if (isMobile) show = false;
+    // Android uses a bounded line-based sandbox shell; desktop/web use PTYs.
     store.panel = show;
     store.save();
     panel.classList.toggle('closed', !show);
@@ -184,18 +189,15 @@ function start(): void {
     for (const v of VIEWS) {
       document.getElementById(`view-${v.id}`)!.hidden = store.view !== v.id;
     }
-    // Keep the hidden git section out of the way on mobile.
-    if (isMobile) {
-      document.getElementById('view-git')!.hidden = true;
-      document.getElementById('view-extensions')!.hidden = true;
-    }
+    // Keep local Git out of the way on mobile; GitHub remains available.
+    if (isMobile) document.getElementById('view-git')!.hidden = true;
     activitybar.querySelectorAll('.act-btn[data-view]').forEach((b) =>
       b.classList.toggle('active', (b as HTMLElement).dataset.view === store.view),
     );
   }
 
   function setView(v: SideView): void {
-    if ((v === 'git' || v === 'extensions') && isMobile) return;
+    if (v === 'git' && isMobile) return;
     if (store.view === v && !sidebar.classList.contains('closed')) {
       setSidebar(false);
       return;
@@ -214,7 +216,13 @@ function start(): void {
     activitybar.append(b);
   }
   activitybar.append(el('div', 'act-spacer'));
-  // No script runners on mobile — hide the Run button there.
+  if (isMobile) {
+    const terminalBtn = el('button', 'act-btn', icon('terminal', 22));
+    terminalBtn.title = 'Android sandbox terminal';
+    terminalBtn.onclick = () => setPanel(!store.panel);
+    activitybar.append(terminalBtn);
+  }
+  // Desktop can run the active file through its full PTY.
   if (!isMobile) {
     const runBtn = el('button', 'act-btn', icon('play', 22));
     runBtn.title = 'Run Active File in Terminal';
@@ -364,12 +372,10 @@ function start(): void {
             searchView.focus();
           },
         },
-        ...(isMobile
-          ? []
-          : [
-              { label: 'Source Control', action: () => setView('git') },
-              { label: 'Extensions', action: () => setView('extensions') },
-            ]),
+        ...(!isMobile ? [{ label: 'Source Control', action: () => setView('git') }] : []),
+        { label: 'GitHub', action: () => setView('github') },
+        { label: 'Extensions', action: () => setView('extensions') },
+        { label: 'HTML Live Preview', action: () => preview.toggle() },
         { sep: true },
         { label: 'Toggle Sidebar', shortcut: 'Ctrl+B', action: () => setSidebar(!store.sidebar) },
         { label: 'Toggle Panel', shortcut: 'Ctrl+`', action: () => setPanel(!store.panel) },
@@ -493,12 +499,12 @@ function start(): void {
         searchView.focus();
       },
     },
-    ...(isMobile
-      ? []
-      : [
-          { id: 'view.git', label: 'View: Show Source Control', run: () => setView('git') },
-          { id: 'view.extensions', label: 'View: Show Extensions', run: () => setView('extensions') },
-        ]),
+    ...(!isMobile
+      ? [{ id: 'view.git', label: 'View: Show Source Control', run: () => setView('git') }]
+      : []),
+    { id: 'view.github', label: 'View: Show GitHub', run: () => setView('github') },
+    { id: 'view.extensions', label: 'View: Show Extensions', run: () => setView('extensions') },
+    { id: 'view.preview', label: 'View: Toggle HTML Live Preview', run: () => preview.toggle() },
     {
       id: 'view.sidebar',
       label: 'View: Toggle Sidebar',
@@ -535,12 +541,10 @@ function start(): void {
     { id: 'help.about', label: 'Help: About Karat', run: showAbout },
   ];
   palette.register(commands);
-  if (!isMobile) {
-    void loadWorkspaceExtensions(terminal).then((extensionCommands) => {
-      palette.register(extensionCommands);
-      if (extensionCommands.length) toast(`Loaded ${extensionCommands.length} extension command(s)`, 'ok');
-    });
-  }
+  void loadWorkspaceExtensions(terminal).then((extensionCommands) => {
+    palette.register(extensionCommands);
+    if (extensionCommands.length) toast(`Loaded ${extensionCommands.length} extension command(s)`, 'ok');
+  });
 
   // ----- global shortcuts -----
 
@@ -580,6 +584,18 @@ function start(): void {
 
   document.getElementById('quickopen-btn')!.onclick = () => palette.showFiles();
   document.getElementById('theme-btn')!.onclick = () => toggleTheme();
+  const termuxButton = document.getElementById('termux-open') as HTMLButtonElement;
+  if (isMobile) {
+    termuxButton.hidden = false;
+    termuxButton.onclick = async () => {
+      try {
+        const { openUrl } = await import('@tauri-apps/plugin-opener');
+        await openUrl('https://termux.dev/en/');
+      } catch (error) {
+        toast(`Could not open Termux information: ${String(error)}`, 'error');
+      }
+    };
+  }
   document.getElementById('term-new')!.innerHTML = icon('plus', 15);
   document.getElementById('term-clear')!.innerHTML = icon('trash', 15);
   document.getElementById('panel-hide')!.innerHTML = icon('chevronDown', 15);
@@ -591,7 +607,6 @@ function start(): void {
 
   sidebar.classList.toggle('closed', !store.sidebar);
   panel.classList.toggle('closed', !store.panel);
-  if (isMobile) setPanel(false); // no PTY on phones (yet)
   syncView();
 
   (async () => {
@@ -604,13 +619,11 @@ function start(): void {
     } else {
       editor.renderTabs();
     }
-    if (!isMobile) {
-      terminal.connect();
-      void gitView.refresh();
-    }
+    if (!isMobile) void gitView.refresh();
+    if (!isMobile || store.panel) terminal.connect();
     void refreshTitle();
     if (isMobile) {
-      toast('Mobile build: files live in private app storage. Git is desktop-only for now.', 'info', 5000);
+      toast('Android: private workspace, sandbox terminal, GitHub, and Open VSX are ready.', 'info', 5000);
     }
   })();
 }

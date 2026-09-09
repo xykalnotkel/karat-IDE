@@ -1,6 +1,7 @@
 import { api, Entry } from './api';
 import { el, esc, toast } from './ui';
 import { icon } from './icons';
+import { fileIconKind } from './fileIcons';
 
 function parentDir(path: string): string {
   const i = path.lastIndexOf('/');
@@ -84,7 +85,7 @@ export class Explorer {
         `<span class="twisty">${
           e.is_dir ? icon(open ? 'chevronDown' : 'chevronRight', 14) : ''
         }</span>` +
-        `<span class="tree-icon">${icon(e.is_dir ? 'folder' : 'file', 15)}</span>` +
+        `<span class="tree-icon ${fileIconKind(e.name, e.is_dir)}">${icon(e.is_dir ? 'folder' : 'file', 15)}</span>` +
         `<span class="tree-name">${esc(e.name)}</span>` +
         `<span class="row-actions"><button data-act="rename" title="Rename">${icon(
           'pencil',

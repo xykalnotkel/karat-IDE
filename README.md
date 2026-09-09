@@ -6,7 +6,7 @@
 
 **Karat is a community-first lightweight IDE developed by [XySpace](https://github.com/xykalnotkel).** It combines a Rust/Tauri core with Monaco and a quiet, Surface-friendly interface. The project targets Windows, Linux, Android, and an optional browser-hosted mode.
 
-> **Status: v0.2.0 alpha.** Karat is useful today, but APIs and storage formats may still change. Android and browser mode intentionally provide fewer native capabilities than desktop.
+> **Status: v0.3.0 alpha.** Karat is useful today, but APIs and storage formats may still change. Android and browser mode intentionally provide fewer native capabilities than desktop.
 
 ## Features
 
@@ -18,8 +18,8 @@
 | Run | Context-aware commands for Rust, Node.js, Python, and other common files |
 | Git | Branch/status view, staging, and commits through the installed Git CLI |
 | Navigation | Fuzzy Quick Open and Command Palette |
-| Extensions | Named-folder declarative extensions with explicit terminal commands |
-| Experience | Dark/light themes, quiet chrome, keyboard navigation, offline desktop assets |
+| Extensions | Named folders, local VSIX import, and Open VSX safe-compatibility installation |
+| Experience | HTML Live Preview, semantic file icons, ANSI terminal colors, dark/light themes, and quiet chrome |
 
 ## Quick start
 
@@ -72,7 +72,7 @@ npm run android:init       # only if src-tauri/gen/android is absent
 npm run android:build      # APK + AAB, ARM 32-bit and ARM 64-bit
 ```
 
-CI's universal APK/AAB contains `armeabi-v7a` and `arm64-v8a`. `minSdk 24` supports Android 7 and newer. Android uses private app storage; editing, exploring, saving, and searching are available, while Git CLI and native PTY features are hidden.
+CI's universal APK/AAB contains `armeabi-v7a` and `arm64-v8a`. `minSdk 24` supports Android 7 and newer. Android uses private app storage and a touch-optimized layout. Editing, exploring, saving, search, Open VSX browsing, GitHub login, and a bounded `/system/bin/sh` command console are available. Local Git CLI and a true interactive PTY remain desktop-only.
 
 ### Web mode
 
@@ -100,6 +100,14 @@ On first desktop launch, Karat creates a user-owned workspace:
 
 This avoids placing a broad filesystem root or sensitive profile files inside the project view. Desktop users can choose another folder with **File → Open Folder**.
 
+## GitHub account
+
+The GitHub activity view supports fine-grained Personal Access Tokens and GitHub OAuth Device Flow. Tokens are held in session storage and are not written to project files. Device Flow requires a public GitHub OAuth App Client ID with Device Flow enabled; no client secret is embedded in Karat.
+
+## HTML Live Preview
+
+Open an `.html` file and select **View → HTML Live Preview** or the eye button in the tab bar. Updates are debounced and rendered in a sandboxed iframe. HTML and CSS work immediately; scripts remain constrained by Karat's Content Security Policy. Relative multi-file asset serving is planned for a later preview-server iteration.
+
 ## Extension API v1
 
 Desktop users can choose **Extensions → Install from Folder**. Karat validates and copies the selected named folder to:
@@ -125,7 +133,7 @@ Example `extension.json`:
 
 IDs accept ASCII letters, numbers, `-`, and `_`. Installation rejects symbolic links and enforces count/size limits. Extension v1 never evaluates third-party JavaScript; a contributed terminal command runs only after an explicit user action. Review commands before running them.
 
-Karat does **not** claim full VS Code Extension Host compatibility. Themes, snippets, grammars, WASM, and carefully scoped adapters can be added incrementally without weakening this safety model.
+Karat can search Open VSX and safely import local `.vsix` packages. Imported files are bounded and archive paths are validated. Karat records supported theme, icon-theme, snippet, and grammar contributions, but does not execute a package’s JavaScript extension host. Karat therefore does **not** claim full VS Code compatibility; unsupported extensions can be installed as resources but will not run their Node/VS Code APIs.
 
 ## Architecture
 

@@ -1070,3 +1070,129 @@ input:focus-visible {
 #activitybar { background: color-mix(in srgb, var(--bg-2) 92%, var(--fg) 8%); }
 .side-header { font-weight: 600; }
 .tree-row, .git-file { border-radius: 5px; margin-inline: 4px; }
+
+/* ---------- semantic file and folder icons ---------- */
+.tree-icon { position: relative; }
+.tree-icon[class*='folder-'] { color: #d5a94f; }
+.tree-icon.folder-source { color: #60a5fa; }
+.tree-icon.folder-assets, .tree-icon.folder-images { color: #c084fc; }
+.tree-icon.folder-test { color: #6ee7a2; }
+.tree-icon.folder-git, .tree-icon.folder-github { color: #f472b6; }
+.tree-icon.folder-android { color: #65c466; }
+.tree-icon.folder-karat { color: #818cf8; }
+:is(.tree-icon,.tab-file-icon).file-html { color: #f97316; }
+:is(.tree-icon,.tab-file-icon).file-css { color: #60a5fa; }
+:is(.tree-icon,.tab-file-icon).file-javascript { color: #eab308; }
+:is(.tree-icon,.tab-file-icon).file-typescript { color: #3b82f6; }
+:is(.tree-icon,.tab-file-icon).file-json, :is(.tree-icon,.tab-file-icon).file-config { color: #d4b106; }
+:is(.tree-icon,.tab-file-icon).file-markdown, :is(.tree-icon,.tab-file-icon).file-readme { color: #38bdf8; }
+:is(.tree-icon,.tab-file-icon).file-rust { color: #e8794e; }
+:is(.tree-icon,.tab-file-icon).file-python { color: #60a5fa; }
+:is(.tree-icon,.tab-file-icon).file-java { color: #f97316; }
+:is(.tree-icon,.tab-file-icon).file-kotlin { color: #a78bfa; }
+:is(.tree-icon,.tab-file-icon).file-cpp, :is(.tree-icon,.tab-file-icon).file-csharp { color: #818cf8; }
+:is(.tree-icon,.tab-file-icon).file-go { color: #22d3ee; }
+:is(.tree-icon,.tab-file-icon).file-ruby { color: #ef4444; }
+:is(.tree-icon,.tab-file-icon).file-yaml { color: #f87171; }
+:is(.tree-icon,.tab-file-icon).file-image, :is(.tree-icon,.tab-file-icon).file-svg { color: #c084fc; }
+:is(.tree-icon,.tab-file-icon).file-shell, :is(.tree-icon,.tab-file-icon).file-terminal, :is(.tree-icon,.tab-file-icon).file-powershell { color: #4ade80; }
+:is(.tree-icon,.tab-file-icon).file-database { color: #2dd4bf; }
+:is(.tree-icon,.tab-file-icon).file-npm { color: #ef4444; }
+:is(.tree-icon,.tab-file-icon).file-docker { color: #38bdf8; }
+:is(.tree-icon,.tab-file-icon).file-git { color: #f97316; }
+:is(.tree-icon,.tab-file-icon).file-package, :is(.tree-icon,.tab-file-icon).file-archive { color: #f59e0b; }
+
+/* ---------- HTML live preview ---------- */
+#tabsbar { display: flex; min-width: 0; }
+#tabs { flex: 1; min-width: 0; }
+#preview-toggle { flex: none; margin: 3px 6px; }
+#live-preview {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid var(--border-strong);
+}
+#live-preview[hidden] { display: none; }
+.preview-open #editor { right: 50%; }
+.preview-header {
+  height: 34px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px 0 11px;
+  color: var(--fg-dim);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: .5px;
+}
+.preview-header > span { display: flex; align-items: center; gap: 7px; }
+.preview-frame { flex: 1; width: 100%; border: 0; background: white; }
+
+/* ---------- GitHub and integrations ---------- */
+.github-body, .extensions-gallery { overflow: auto; }
+.github-body { padding: 8px; }
+.integration-intro, .device-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 20px 10px;
+  text-align: center;
+  color: var(--fg-dim);
+}
+.integration-intro b, .device-flow b { color: var(--fg-bright); font-size: 15px; }
+.field-label { display: block; margin: 9px 2px 5px; color: var(--fg-dim); font-size: 11px; }
+.github-token, .github-client { width: 100%; box-sizing: border-box; }
+.integration-separator { display: flex; align-items: center; gap: 8px; margin: 15px 0 4px; color: var(--fg-dim); font-size: 11px; }
+.integration-separator::before, .integration-separator::after { content: ''; height: 1px; flex: 1; background: var(--border); }
+.integration-note { color: var(--fg-dim); font-size: 11px; line-height: 1.45; }
+.github-user { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; margin-bottom: 10px; }
+.github-user > div:last-child { display: flex; flex-direction: column; min-width: 0; }
+.github-user span { color: var(--fg-dim); font-size: 11px; }
+.github-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; color: white; background: linear-gradient(145deg,#334155,#6366f1); font-weight: 700; }
+.github-repo { display: flex; flex-direction: column; gap: 3px; padding: 9px; margin: 3px 0; color: var(--fg); text-decoration: none; border: 1px solid transparent; border-radius: 7px; }
+.github-repo:hover { background: var(--hover); border-color: var(--border); }
+.github-repo b { color: var(--accent); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.github-repo span, .github-repo small { color: var(--fg-dim); font-size: 10px; }
+.device-code { padding: 10px 18px; color: var(--fg-bright); background: var(--input); border: 1px solid var(--accent); border-radius: 7px; font: 700 22px ui-monospace, monospace; letter-spacing: 4px; }
+.device-flow a { color: var(--accent); display: flex; gap: 4px; align-items: center; }
+
+/* ---------- Open VSX gallery ---------- */
+.extension-search { display: flex; gap: 4px; padding: 0 8px 8px; }
+.extension-search input { flex: 1; min-width: 0; }
+.extensions-list { flex: none; max-height: 46%; }
+.extensions-gallery { flex: 1; min-height: 0; padding: 0 8px 14px; }
+.extensions-loading { padding: 16px; color: var(--fg-dim); text-align: center; }
+.extensions-empty.compact { min-height: 50px; padding: 10px; }
+.marketplace-card { padding-bottom: 42px; }
+.extension-mark.market { background: linear-gradient(145deg,#047857,#0891b2); }
+.extension-install { position: absolute; left: 55px; bottom: 8px; min-height: 27px; padding: 4px 12px; }
+.verified { color: #22c55e; }
+
+/* ---------- phone-specific comfort ---------- */
+@media (max-width: 720px) {
+  #live-preview { width: 100%; }
+  .preview-open #editor { right: 0; visibility: hidden; }
+  #panel { height: min(48vh, 390px); }
+  #terminal { padding-left: 7px; }
+  .xterm { font-size: 14px; }
+  #statusbar .sb-item:nth-child(n+3) { display: none; }
+  .extension-card { grid-template-columns: 42px 1fr; padding-block: 12px; }
+  .extension-mark { width: 42px; height: 42px; }
+}
+.tab-file-icon { display: inline-flex; flex: none; color: var(--fg-dim); }
+@media (max-width: 480px) {
+  #panel-header { padding-inline: 6px; }
+  .panel-tabs { display: none; }
+  .panel-actions { width: 100%; justify-content: flex-end; align-items: center; }
+  #term-profile { max-width: 112px; font-size: 11px; }
+  #termux-open { min-height: 30px; padding-inline: 9px; font-size: 11px; }
+}

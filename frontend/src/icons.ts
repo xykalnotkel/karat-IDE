@@ -24,6 +24,10 @@ const P: Record<string, string> = {
   play: `<path d="M5 2.5l8 5.5-8 5.5z"/>`,
   extensions: `<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><path d="M11.5 9v5M9 11.5h5"/>`,
   download: `<path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/>`,
+  github: `<path d="M8 1.7a6.3 6.3 0 0 0-2 12.3c.3.1.4-.1.4-.3v-1.2c-1.8.4-2.2-.8-2.2-.8-.3-.7-.7-.9-.7-.9-.6-.4 0-.4 0-.4.6 0 1 .7 1 .7.6 1 1.5.7 1.9.5.1-.4.2-.7.4-.8-1.4-.2-2.9-.7-2.9-3.1 0-.7.2-1.2.7-1.7-.1-.2-.3-.8.1-1.7 0 0 .6-.2 1.8.7a6.5 6.5 0 0 1 3.3 0c1.2-.9 1.8-.7 1.8-.7.4.9.2 1.5.1 1.7.4.5.7 1 .7 1.7 0 2.4-1.5 2.9-2.9 3.1.2.2.4.6.4 1.1v1.8c0 .2.1.4.4.3A6.3 6.3 0 0 0 8 1.7z"/>`,
+  preview: `<path d="M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.8"/>`,
+  external: `<path d="M9 2h5v5M14 2L7.5 8.5"/><path d="M12 9v4H3V4h4"/>`,
+  package: `<path d="M2 5l6-3 6 3v6l-6 3-6-3z"/><path d="M2 5l6 3 6-3M8 8v6"/>`,
 };
 
 export function icon(name: string, size = 16): string {

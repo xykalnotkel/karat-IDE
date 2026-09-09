@@ -3,5 +3,16 @@
   "identifier": "default",
   "description": "Default capability for the Karat main window.",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-open"]
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://github.com/*" },
+        { "url": "https://termux.dev/*" },
+        { "url": "https://f-droid.org/packages/com.termux/*" }
+      ]
+    }
+  ]
 }

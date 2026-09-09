@@ -5,6 +5,12 @@
 //! on Android/iOS, so those commands return a clear error there (the UI hides
 //! or degrades them accordingly).
 
+mod integrations;
+
+use integrations::{
+    github_device_poll, github_device_start, install_openvsx_extension, install_vsix,
+    mobile_term_run,
+};
 use karat::core_fs::{self, CoreError};
 use karat::core_git;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -380,6 +386,7 @@ pub fn run() {
         .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             root: Mutex::new(initial_root),
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -399,6 +406,11 @@ pub fn run() {
             rename_path,
             search_files,
             install_extension,
+            install_openvsx_extension,
+            install_vsix,
+            github_device_start,
+            github_device_poll,
+            mobile_term_run,
             git_status,
             git_add,
             git_commit,

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Added GitHub Device Flow and session-only fine-grained token login with repository browsing.
+- Added Open VSX search/install and local VSIX safe-compatibility import.
+- Added built-in sandboxed HTML Live Preview.
+- Added semantic colored icons for common files, folders, and editor tabs.
+- Added a bounded Android `/system/bin/sh` command console and Termux companion link.
+- Improved touch targets, mobile preview layout, and terminal ANSI colors.
+
 ## 0.2.0
 
 - Rebranded Karat as an open-source IDE developed by XySpace.

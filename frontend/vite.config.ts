@@ -11,6 +11,7 @@ export default defineConfig({
   plugins: [monacoEditorPlugin({})],
   server: {
     host: '0.0.0.0',
+    allowedHosts: ['.e2b.app'],
     port: 5173,
     proxy: {
       '/api': 'http://127.0.0.1:3000',

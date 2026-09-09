@@ -1,6 +1,6 @@
 // Persistent UI state (tabs, theme, layout) in localStorage.
 
-export type SideView = 'explorer' | 'search' | 'git' | 'extensions';
+export type SideView = 'explorer' | 'search' | 'git' | 'github' | 'extensions';
 
 interface Persisted {
   tabs: string[];
@@ -30,6 +30,7 @@ class Store {
         s.view === 'explorer' ||
         s.view === 'search' ||
         s.view === 'git' ||
+        s.view === 'github' ||
         s.view === 'extensions'
       ) {
         this.view = s.view;
