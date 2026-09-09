@@ -4,8 +4,13 @@
   "version": "0.1.0",
   "scripts": {
     "setup": "npm install && npm --prefix frontend install",
+    "web:dev": "npm --prefix frontend run dev",
+    "web:build": "npm --prefix frontend run build",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --apk"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

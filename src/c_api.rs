@@ -1,5 +1,5 @@
 //! C ABI exports for building Karat as DLL / cdylib / .so / .dylib
-//! 
+//!
 //! This module exposes safe C-compatible functions that return JSON strings.
 //! Caller must free returned strings with `karat_free_string`.
 //!
@@ -58,8 +58,12 @@ fn json_err(msg: String) -> *mut c_char {
 // --- Exported C ABI ---
 
 /// Free a string returned by Karat DLL. MUST be called for every non-null string returned.
+///
+/// # Safety
+/// `s` must be null or a pointer returned by a Karat function, and it must not
+/// have been freed previously.
 #[no_mangle]
-pub extern "C" fn karat_free_string(s: *mut c_char) {
+pub unsafe extern "C" fn karat_free_string(s: *mut c_char) {
     if s.is_null() {
         return;
     }

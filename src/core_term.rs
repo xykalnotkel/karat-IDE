@@ -40,9 +40,7 @@ pub struct TermSession {
 
 impl TermSession {
     pub fn input(&mut self, bytes: &[u8]) -> Result<(), String> {
-        self.writer
-            .write_all(bytes)
-            .map_err(|e| e.to_string())?;
+        self.writer.write_all(bytes).map_err(|e| e.to_string())?;
         self.writer.flush().map_err(|e| e.to_string())
     }
 

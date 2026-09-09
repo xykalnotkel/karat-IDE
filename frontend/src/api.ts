@@ -29,10 +29,22 @@ export interface GitStatus {
   files: GitFile[];
 }
 
+// Remote web mode can be opened as `https://host/?token=...`. Keep the
+// URL-safe token for API/WebSocket requests, then remove it from browser history.
+const pageToken = new URLSearchParams(location.search).get('token');
+if (pageToken && /^[A-Za-z0-9._~-]{16,}$/.test(pageToken)) {
+  sessionStorage.setItem('karat:auth-token', pageToken);
+  history.replaceState(null, '', `${location.pathname}${location.hash}`);
+}
+export const webAuthToken = sessionStorage.getItem('karat:auth-token') || '';
+
 async function req<T>(input: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set('Content-Type', 'application/json');
+  if (webAuthToken) headers.set('Authorization', `Bearer ${webAuthToken}`);
   const res = await fetch(input, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    headers,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);

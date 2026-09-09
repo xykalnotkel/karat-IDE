@@ -5,6 +5,7 @@ import { Channel } from '@tauri-apps/api/core';
 import { invoke, isTauri } from './transport';
 import { b64encode, b64decode } from './ui';
 import { store } from './state';
+import { webAuthToken } from './api';
 
 interface TermEvent {
   t: string;
@@ -96,9 +97,12 @@ export class TerminalView {
     this.disconnect();
     this.term.writeln('\x1b[90mConnecting to shell…\x1b[0m');
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(
-      `${proto}://${location.host}/ws/term?cols=${this.term.cols}&rows=${this.term.rows}`,
-    );
+    const params = new URLSearchParams({
+      cols: String(this.term.cols),
+      rows: String(this.term.rows),
+    });
+    if (webAuthToken) params.set('token', webAuthToken);
+    const ws = new WebSocket(`${proto}://${location.host}/ws/term?${params}`);
     this.ws = ws;
     ws.onopen = () => this.refit();
     ws.onmessage = (ev) => {

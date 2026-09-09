@@ -60,17 +60,28 @@ npm run tauri:dev
 
 ---
 
-## 🐧 Build Linux / 🍎 macOS
+## 🐧 Build Linux
 
-Prasyarat Linux (Debian/Ubuntu):
+Prasyarat Debian/Ubuntu:
 
 ```bash
 sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
   libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-Lalu perintahnya sama: `npm run setup` → `npm run tauri:build`
-(h timely menghasilkan `.deb` di Linux, `.dmg` di macOS).
+Lalu jalankan `npm run setup` → `npm run tauri:build`. Build Linux menghasilkan `.deb`, `.rpm`, dan `.AppImage`.
+
+## 🤖 Build Android
+
+Android membutuhkan Android Studio/SDK, NDK 27, Java 17, dan target Rust Android. Setelah environment Android siap:
+
+```bash
+npm run setup
+npm run android:init       # hanya jika src-tauri/gen/android belum ada
+npm run android:build      # APK arm64/debug dapat dibuat lewat CI
+```
+
+Build mobile menggunakan private app storage. Editor, explorer, save, dan search tersedia; Git CLI, PTY terminal, serta runner disembunyikan karena tidak tersedia secara native di Android.
 
 ## 🌐 Mode web (opsional, buat dev/preview)
 
@@ -84,8 +95,18 @@ cd frontend && npm run dev # UI :5173 (proxy /api + /ws ke backend)
 
 | Env var | Default | Fungsi |
 |---|---|---|
-| `KARAT_ROOT` | `./workspace` | Folder workspace (web & desktop) |
+| `KARAT_ROOT` | `./workspace` | Folder workspace web |
+| `KARAT_HOST` | `127.0.0.1` | IP listener backend web |
 | `KARAT_PORT` | `3000` | Port backend web |
+| `KARAT_AUTH_TOKEN` | kosong | Wajib (minimal 16 karakter URL-safe) jika host bukan loopback |
+
+Web mode aman secara default karena hanya menerima koneksi localhost. Untuk akses LAN/container:
+
+```bash
+KARAT_HOST=0.0.0.0 KARAT_AUTH_TOKEN='ganti-dengan-token-random-panjang' cargo run
+```
+
+Buka `http://server:3000/?token=ganti-dengan-token-random-panjang`. Token disimpan hanya di `sessionStorage` dan langsung dihapus dari address bar. Jangan mengekspos web mode langsung ke internet; tetap gunakan HTTPS/reverse proxy.
 
 ---
 

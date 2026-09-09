@@ -45,8 +45,8 @@ function showAbout(): void {
   showModal(
     'About Karat',
     `<p><b>Karat v0.1.0</b> — a lightweight IDE crafted with Rust.</p>
-     <p>Desktop & mobile: Tauri + Rust core (files, search, git, PTY terminal).<br>
-     Frontend: TypeScript + Monaco Editor + xterm.js.</p>
+     <p>Desktop: Tauri + Rust core with files, search, Git, and PTY terminal.<br>
+     Android: private-workspace editor and search. Web: local Axum backend.</p>
      <p>Roadmap: Language Server Protocol, debugging (DAP), extensions.</p>`,
   );
 }
@@ -171,6 +171,8 @@ function start(): void {
   }
 
   function setPanel(show: boolean): void {
+    // Native PTYs are deliberately desktop/web-only.
+    if (isMobile) show = false;
     store.panel = show;
     store.save();
     panel.classList.toggle('closed', !show);
@@ -585,8 +587,10 @@ function start(): void {
     } else {
       editor.renderTabs();
     }
-    terminal.connect();
-    if (!isMobile) void gitView.refresh();
+    if (!isMobile) {
+      terminal.connect();
+      void gitView.refresh();
+    }
     void refreshTitle();
     if (isMobile) {
       toast('Mobile build: files live in private app storage. Git is desktop-only for now.', 'info', 5000);

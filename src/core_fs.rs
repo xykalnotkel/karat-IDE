@@ -58,27 +58,59 @@ impl std::error::Error for CoreError {}
 /// Resolve a client-supplied relative path against the workspace root,
 /// rejecting anything that would escape it (`..` tricks included).
 pub fn safe_join(root: &Path, rel: &str) -> Result<PathBuf, CoreError> {
-    let rel = rel.trim().trim_start_matches(['/', '\\']);
+    // Client paths are always workspace-relative. Do not silently reinterpret an
+    // absolute path, a Windows drive prefix, or a UNC path as a relative one.
+    let rel = rel.trim();
     if rel.is_empty() {
         return Ok(root.to_path_buf());
     }
-    let mut norm = root.to_path_buf();
+    if rel.starts_with('/') || rel.starts_with('\\') || Path::new(rel).is_absolute() {
+        return Err(CoreError::BadPath(
+            "absolute paths are not allowed".to_string(),
+        ));
+    }
+
+    let mut candidate = root.to_path_buf();
     for comp in Path::new(rel).components() {
         match comp {
+            Component::Normal(c) => candidate.push(c),
+            Component::CurDir => {}
             Component::ParentDir => {
-                norm.pop();
-                if !norm.starts_with(root) {
+                if candidate == root {
                     return Err(CoreError::BadPath("path escapes workspace".to_string()));
                 }
+                candidate.pop();
             }
-            Component::CurDir | Component::RootDir | Component::Prefix(_) => {}
-            Component::Normal(c) => norm.push(c),
+            Component::RootDir | Component::Prefix(_) => {
+                return Err(CoreError::BadPath(
+                    "absolute paths are not allowed".to_string(),
+                ));
+            }
         }
     }
-    if !norm.starts_with(root) {
-        return Err(CoreError::BadPath("path escapes workspace".to_string()));
+
+    // Lexical checks do not stop `workspace/link -> /outside`. Canonicalize the
+    // closest existing ancestor so reads and writes through symlinks cannot
+    // escape the workspace, while still allowing creation of new nested paths.
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|e| CoreError::Io(format!("cannot resolve workspace root: {e}")))?;
+    let mut existing = candidate.as_path();
+    while !existing.exists() {
+        existing = existing
+            .parent()
+            .ok_or_else(|| CoreError::BadPath("path escapes workspace".to_string()))?;
     }
-    Ok(norm)
+    let canonical_existing = existing
+        .canonicalize()
+        .map_err(|e| CoreError::Io(format!("cannot resolve path: {e}")))?;
+    if !canonical_existing.starts_with(&canonical_root) {
+        return Err(CoreError::BadPath(
+            "path escapes workspace through a symbolic link".to_string(),
+        ));
+    }
+
+    Ok(candidate)
 }
 
 fn rel_path(root: &Path, p: &Path) -> String {
@@ -261,8 +293,74 @@ pub fn search(root: &Path, rel: &str, query: &str) -> Result<SearchResults, Core
             }
         }
     }
-    Ok(SearchResults {
-        results,
-        truncated,
-    })
+    Ok(SearchResults { results, truncated })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_workspace(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root =
+            std::env::temp_dir().join(format!("karat-{label}-{}-{nonce}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        root.canonicalize().unwrap()
+    }
+
+    #[test]
+    fn safe_join_accepts_workspace_relative_paths() {
+        let root = temp_workspace("relative");
+        assert_eq!(
+            safe_join(&root, "src/main.rs").unwrap(),
+            root.join("src/main.rs")
+        );
+        assert_eq!(
+            safe_join(&root, "src/../README.md").unwrap(),
+            root.join("README.md")
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn safe_join_rejects_escape_and_absolute_paths() {
+        let root = temp_workspace("escape");
+        assert!(safe_join(&root, "../outside").is_err());
+        assert!(safe_join(&root, "/etc/passwd").is_err());
+        assert!(safe_join(&root, "\\\\server\\share").is_err());
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn safe_join_rejects_symlink_escape_for_existing_and_new_files() {
+        use std::os::unix::fs::symlink;
+
+        let root = temp_workspace("symlink-root");
+        let outside = temp_workspace("symlink-outside");
+        std::fs::write(outside.join("secret.txt"), "secret").unwrap();
+        symlink(&outside, root.join("link")).unwrap();
+
+        assert!(safe_join(&root, "link/secret.txt").is_err());
+        assert!(safe_join(&root, "link/new/nested.txt").is_err());
+
+        let _ = std::fs::remove_dir_all(root);
+        let _ = std::fs::remove_dir_all(outside);
+    }
+
+    #[test]
+    fn file_operations_round_trip_and_protect_root() {
+        let root = temp_workspace("roundtrip");
+        save_file(&root, "notes/hello.txt", "hello").unwrap();
+        assert_eq!(read_file(&root, "notes/hello.txt").unwrap(), "hello");
+        rename_path(&root, "notes/hello.txt", "notes/world.txt").unwrap();
+        assert_eq!(read_file(&root, "notes/world.txt").unwrap(), "hello");
+        assert!(delete_path(&root, "").is_err());
+        delete_path(&root, "notes").unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
 }
