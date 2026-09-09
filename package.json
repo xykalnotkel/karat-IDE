@@ -10,7 +10,7 @@
     "tauri:build": "tauri build",
     "android:init": "tauri android init",
     "android:dev": "tauri android dev",
-    "android:build": "tauri android build --apk"
+    "android:build": "tauri android build --target aarch64 armv7 --apk --aab"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

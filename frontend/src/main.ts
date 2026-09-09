@@ -13,6 +13,7 @@ import { GitView } from './gitView';
 import { Palette, Command } from './palette';
 import { StatusBar } from './statusbar';
 import { runnerFor } from './lang';
+import { loadWorkspaceExtensions } from './extensions';
 
 // ---------- theme ----------
 
@@ -71,23 +72,11 @@ async function ensureRoot(): Promise<void> {
       localStorage.removeItem('karat:root');
     }
   }
-  // First run (or folder moved): ask for a workspace folder.
-  const { open } = await import('@tauri-apps/plugin-dialog');
-  for (;;) {
-    const sel = await open({ directory: true, multiple: false, title: 'Open workspace folder' });
-    if (typeof sel === 'string') {
-      try {
-        await invoke('set_root', { path: sel });
-        localStorage.setItem('karat:root', sel);
-        return;
-      } catch (e) {
-        toast('Cannot open folder: ' + (e instanceof Error ? e.message : String(e)), 'error');
-      }
-    } else {
-      // Dialog cancelled — fall back to the default root.
-      return;
-    }
-  }
+  // First run (or a folder was moved): start in a guaranteed writable user
+  // location. On Windows this is Documents/Karat Workspace.
+  const dir = await invoke<string>('default_root');
+  await invoke('set_root', { path: dir });
+  localStorage.setItem('karat:root', dir);
 }
 
 // ---------- app ----------
@@ -524,6 +513,12 @@ function start(): void {
     { id: 'help.about', label: 'Help: About Karat', run: showAbout },
   ];
   palette.register(commands);
+  if (!isMobile) {
+    void loadWorkspaceExtensions(terminal).then((extensionCommands) => {
+      palette.register(extensionCommands);
+      if (extensionCommands.length) toast(`Loaded ${extensionCommands.length} extension command(s)`, 'ok');
+    });
+  }
 
   // ----- global shortcuts -----
 

@@ -15,7 +15,7 @@ terinspirasi dari VS Code, tapi dengan backend native yang ramping.
 | 📝 Editor | Monaco Editor (mesin yang sama dengan VS Code), 40+ bahasa, minimap, multi-tab, dirty indicator, sticky scroll |
 | 📁 Explorer | Tree file, Open Folder (dialog native), new/rename/delete |
 | 🔍 Search | Cari teks ke seluruh workspace |
-| 💻 Terminal | Terminal terintegrasi penuh (PTY asli + xterm.js) |
+| 💻 Terminal | PTY asli + xterm.js, profile PowerShell/cmd/WSL/Bash/Zsh/Fish/Nushell |
 | ▶️ Run | "Run Active File" — otomatis `cargo run` / `npm run dev` / `python3` / `node` / … |
 | ⎇ Git | Branch di statusbar, changes (staged/unstaged/untracked), stage, commit |
 | ⌨️ Palette | Quick open fuzzy (`Ctrl+P`) + command palette (`Ctrl+Shift+P`) |
@@ -27,10 +27,11 @@ terinspirasi dari VS Code, tapi dengan backend native yang ramping.
 
 ### Prasyarat (sekali saja)
 
-1. **Rust** — install via [rustup](https://rustup.rs) (butuh *Visual Studio C++ Build Tools*,
-   biasanya sudah ikut jika install Rust lewat winget/`rustup-init`).
-2. **Node.js 18+** — dari [nodejs.org](https://nodejs.org).
-3. **WebView2** — sudah bawaan Windows 10/11, tidak perlu install.
+1. **Rust** — install via [rustup](https://rustup.rs).
+2. **Microsoft C++ Build Tools** — hanya toolchain/linker untuk **mengompilasi** aplikasi Rust target Windows. Karat tidak dibuat dengan Visual Studio dan pengguna installer tidak perlu memasang Visual Studio.
+3. **Node.js 20+** — hanya untuk proses build frontend.
+
+Karat menggunakan Tauri WebView2, tetapi seluruh UI, Monaco, CSS, dan JavaScript dibundel lokal. Installer Windows menyertakan WebView2 Offline Installer sehingga instalasi dan penggunaan editor tidak membutuhkan internet.
 
 > WiX & NSIS otomatis diunduh oleh Tauri saat build pertama. Signing/publish
 > ke Microsoft Store butuh sertifikat (opsional, nanti saja).
@@ -78,8 +79,10 @@ Android membutuhkan Android Studio/SDK, NDK 27, Java 17, dan target Rust Android
 ```bash
 npm run setup
 npm run android:init       # hanya jika src-tauri/gen/android belum ada
-npm run android:build      # APK arm64/debug dapat dibuat lewat CI
+npm run android:build      # APK + AAB untuk ARM 32-bit dan ARM 64-bit
 ```
+
+CI menghasilkan universal APK/AAB self-signed yang memuat `armeabi-v7a` (32-bit) dan `arm64-v8a` (64-bit). `minSdk 24` berarti perangkat Android 7 hingga Android terbaru—termasuk Android API 32—didukung.
 
 Build mobile menggunakan private app storage. Editor, explorer, save, dan search tersedia; Git CLI, PTY terminal, serta runner disembunyikan karena tidak tersedia secara native di Android.
 
@@ -107,6 +110,41 @@ KARAT_HOST=0.0.0.0 KARAT_AUTH_TOKEN='ganti-dengan-token-random-panjang' cargo ru
 ```
 
 Buka `http://server:3000/?token=ganti-dengan-token-random-panjang`. Token disimpan hanya di `sessionStorage` dan langsung dihapus dari address bar. Jangan mengekspos web mode langsung ke internet; tetap gunakan HTTPS/reverse proxy.
+
+## 📂 Lokasi workspace
+
+Pada first run, Karat membuat lokasi writable milik user:
+
+- Windows: `C:\\Users\\<user>\\Documents\\Karat Workspace`
+- Linux: `~/Documents/Karat Workspace`
+- Android: private app storage
+
+Desktop tetap bisa membuka folder lain melalui **File → Open Folder**.
+
+## 🧩 Extension API v1
+
+Karat memuat extension deklaratif dari `.karat/extensions.json` di workspace. Extension v1 dapat menambahkan command terminal tanpa mengeksekusi JavaScript asing secara otomatis:
+
+```json
+{
+  "extensions": [
+    {
+      "id": "project-tools",
+      "name": "Project Tools",
+      "version": "1.0.0",
+      "commands": [
+        { "id": "test", "title": "Run tests", "terminal": "npm test" }
+      ]
+    }
+  ]
+}
+```
+
+Command muncul di Command Palette. Dukungan themes, snippets, language grammars, dan adapter subset VS Code direncanakan bertahap; kompatibilitas seluruh VS Code Extension Host bukan klaim v1.
+
+## 💻 Terminal profiles
+
+Karat mendeteksi shell yang benar-benar terpasang dan menyediakan selector profile. Kandidatnya mencakup PowerShell 7, Windows PowerShell, Command Prompt, WSL, Bash, Zsh, Fish, Nushell, dan POSIX shell. Android tidak menyediakan PTY native.
 
 ---
 

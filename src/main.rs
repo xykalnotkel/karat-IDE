@@ -119,6 +119,7 @@ async fn main() {
         .route("/api/git", get(git_api::status))
         .route("/api/git/add", post(git_api::add))
         .route("/api/git/commit", post(git_api::commit))
+        .route("/api/terminal/profiles", get(term::profiles))
         .route("/ws/term", get(term::ws_handler))
         .layer(middleware::from_fn_with_state(state.clone(), protect_api))
         .layer(TraceLayer::new_for_http())

@@ -18,10 +18,15 @@ use futures_util::{SinkExt, StreamExt};
 use karat::core_term;
 use serde::Deserialize;
 
+pub async fn profiles() -> axum::Json<Vec<core_term::ShellProfile>> {
+    axum::Json(core_term::available_shells())
+}
+
 #[derive(Deserialize)]
 pub struct TermQuery {
     pub cols: Option<u16>,
     pub rows: Option<u16>,
+    pub profile: Option<String>,
 }
 
 pub async fn ws_handler(
@@ -31,25 +36,26 @@ pub async fn ws_handler(
 ) -> impl IntoResponse {
     let cols = q.cols.unwrap_or(80).clamp(20, 500);
     let rows = q.rows.unwrap_or(24).clamp(5, 200);
-    ws.on_upgrade(move |socket| handle(socket, state, cols, rows))
+    ws.on_upgrade(move |socket| handle(socket, state, cols, rows, q.profile))
 }
 
-async fn handle(socket: WebSocket, state: AppState, cols: u16, rows: u16) {
+async fn handle(socket: WebSocket, state: AppState, cols: u16, rows: u16, profile: Option<String>) {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<core_term::TermEvent>();
-    let mut session = match core_term::spawn(&state.root, cols, rows, move |ev| {
-        let _ = tx.send(ev);
-    }) {
-        Ok(s) => s,
-        Err(e) => {
-            let mut s = socket;
-            let _ = s
-                .send(Message::Text(
-                    serde_json::json!({"t": "err", "d": e}).to_string(),
-                ))
-                .await;
-            return;
-        }
-    };
+    let mut session =
+        match core_term::spawn(&state.root, cols, rows, profile.as_deref(), move |ev| {
+            let _ = tx.send(ev);
+        }) {
+            Ok(s) => s,
+            Err(e) => {
+                let mut s = socket;
+                let _ = s
+                    .send(Message::Text(
+                        serde_json::json!({"t": "err", "d": e}).to_string(),
+                    ))
+                    .await;
+                return;
+            }
+        };
 
     let (mut sender, mut receiver) = socket.split();
 

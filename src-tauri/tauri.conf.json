@@ -35,13 +35,14 @@
     "windows": {
       "nsis": {
         "languages": ["English"],
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
       },
       "wix": {
         "language": "en-US"
       },
       "webviewInstallMode": {
-        "type": "embedBootstrapper"
+        "type": "offlineInstaller"
       }
     }
   }

@@ -916,3 +916,94 @@ button.sb-item:hover {
 .toast.out {
   opacity: 0;
 }
+
+/* ---------- Fluent / Surface adaptive polish ---------- */
+
+:root {
+  --accent: #60a5fa;
+  --status: #2563eb;
+  --radius-control: 6px;
+  --radius-surface: 10px;
+  --surface-glass: rgba(32, 32, 32, 0.82);
+}
+[data-theme='light'] {
+  --accent: #005fb8;
+  --status: #005fb8;
+  --surface-glass: rgba(248, 248, 248, 0.86);
+}
+
+#titlebar,
+#sidebar,
+#panel-header,
+#menu-pop,
+#palette-box,
+#modal-box,
+.toast {
+  backdrop-filter: blur(22px) saturate(125%);
+}
+#titlebar {
+  background: var(--surface-glass);
+}
+#quickopen-btn,
+input,
+.btn,
+.menu-btn,
+.icon-btn,
+.pal-item,
+.menu-item,
+.toast {
+  border-radius: var(--radius-control);
+}
+#quickopen-btn:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+#palette-box,
+#modal-box,
+#menu-pop {
+  border-radius: var(--radius-surface);
+  box-shadow: 0 16px 48px var(--shadow), inset 0 1px rgba(255, 255, 255, 0.06);
+}
+#term-profile {
+  max-width: 180px;
+  height: 26px;
+  padding: 2px 24px 2px 8px;
+  color: var(--fg);
+  background: var(--bg-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  font: inherit;
+}
+
+@media (pointer: coarse) {
+  body { font-size: 14px; }
+  .act-btn { height: 52px; }
+  .tree-row, .menu-item, .pal-item { min-height: 40px; }
+  .icon-btn { min-width: 36px; min-height: 36px; }
+  .btn { min-height: 38px; padding-inline: 16px; }
+  input { min-height: 38px; }
+}
+
+@media (max-width: 720px) {
+  body { grid-template-rows: 44px 1fr 28px; }
+  .tb-menus { display: none; }
+  .tb-center { justify-content: flex-start; }
+  #quickopen-btn { width: 100%; }
+  #quickopen-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #activitybar { width: 52px; z-index: 20; }
+  #sidebar {
+    position: absolute;
+    z-index: 15;
+    left: 52px;
+    top: 44px;
+    bottom: 28px;
+    width: min(82vw, 340px);
+    box-shadow: 12px 0 32px var(--shadow);
+  }
+  #panel { height: 42vh; }
+  .w-keys { display: none; }
+  #term-profile { max-width: 125px; }
+}

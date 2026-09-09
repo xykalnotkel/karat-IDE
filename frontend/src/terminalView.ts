@@ -6,10 +6,16 @@ import { invoke, isTauri } from './transport';
 import { b64encode, b64decode } from './ui';
 import { store } from './state';
 import { webAuthToken } from './api';
+import { isMobile } from './mobile';
 
 interface TermEvent {
   t: string;
   d?: string | null;
+}
+
+interface ShellProfile {
+  id: string;
+  label: string;
 }
 
 export class TerminalView {
@@ -46,7 +52,46 @@ export class TerminalView {
     new ResizeObserver(() => this.refit()).observe(mount);
     document.getElementById('term-new')!.addEventListener('click', () => this.connect());
     document.getElementById('term-clear')!.addEventListener('click', () => this.clear());
+    void this.loadProfiles();
     document.getElementById('panel-hide')!.addEventListener('click', () => this.onTogglePanel());
+  }
+
+  private profile(): string | null {
+    return (document.getElementById('term-profile') as HTMLSelectElement).value || null;
+  }
+
+  private async loadProfiles(): Promise<void> {
+    if (isMobile) return;
+    const select = document.getElementById('term-profile') as HTMLSelectElement;
+    try {
+      const profiles = isTauri
+        ? await invoke<ShellProfile[]>('term_profiles')
+        : await fetch('/api/terminal/profiles', {
+            headers: webAuthToken ? { Authorization: `Bearer ${webAuthToken}` } : {},
+          }).then(async (response) => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return (await response.json()) as ShellProfile[];
+          });
+      select.replaceChildren(
+        ...profiles.map((profile) => {
+          const option = document.createElement('option');
+          option.value = profile.id;
+          option.textContent = profile.label;
+          return option;
+        }),
+      );
+      const saved = localStorage.getItem('karat:terminal-profile');
+      if (saved && profiles.some((profile) => profile.id === saved)) select.value = saved;
+      select.onchange = () => {
+        localStorage.setItem('karat:terminal-profile', select.value);
+        this.connect();
+      };
+    } catch {
+      const fallback = document.createElement('option');
+      fallback.textContent = 'Default shell';
+      fallback.value = '';
+      select.replaceChildren(fallback);
+    }
   }
 
   private theme() {
@@ -84,6 +129,7 @@ export class TerminalView {
       this.termId = await invoke<string>('term_spawn', {
         cols: this.term.cols,
         rows: this.term.rows,
+        profile: this.profile(),
         onData: channel,
       });
       this.refit();
@@ -102,6 +148,7 @@ export class TerminalView {
       rows: String(this.term.rows),
     });
     if (webAuthToken) params.set('token', webAuthToken);
+    if (this.profile()) params.set('profile', this.profile()!);
     const ws = new WebSocket(`${proto}://${location.host}/ws/term?${params}`);
     this.ws = ws;
     ws.onopen = () => this.refit();

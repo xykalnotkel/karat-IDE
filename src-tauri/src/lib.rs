@@ -51,10 +51,22 @@ fn set_root(state: State<AppState>, path: String) -> Result<String, String> {
     Ok(canon.to_string_lossy().into_owned())
 }
 
-/// Private app storage — the workspace home on mobile (no folder picker there).
+/// A writable first-run workspace. Desktop uses the user's Documents folder
+/// (`C:\\Users\\<name>\\Documents\\Karat Workspace` on Windows); mobile uses
+/// private app storage. Users can still switch to any folder on desktop.
 #[tauri::command]
 fn default_root(app: tauri::AppHandle) -> Result<String, String> {
-    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let base = app
+        .path()
+        .document_dir()
+        .or_else(|_| app.path().app_data_dir())
+        .map_err(|e| e.to_string())?;
+
+    let dir = base.join("Karat Workspace");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.to_string_lossy().into_owned())
 }
@@ -167,15 +179,34 @@ async fn git_commit(
 
 #[tauri::command]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn term_profiles() -> Vec<core_term::ShellProfile> {
+    core_term::available_shells()
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn term_profiles() -> Vec<serde_json::Value> {
+    Vec::new()
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 async fn term_spawn(
     state: State<'_, AppState>,
     cols: u16,
     rows: u16,
+    profile: Option<String>,
     on_data: Channel<TermEvent>,
 ) -> Result<String, String> {
-    let session = core_term::spawn(&root_of(&state), cols, rows, move |ev| {
-        let _ = on_data.send(ev);
-    })?;
+    let session = core_term::spawn(
+        &root_of(&state),
+        cols,
+        rows,
+        profile.as_deref(),
+        move |ev| {
+            let _ = on_data.send(ev);
+        },
+    )?;
     let mut seq = state.term_seq.lock().expect("seq lock");
     *seq += 1;
     let id = format!("term-{seq}");
@@ -189,8 +220,13 @@ async fn term_spawn(
 
 #[tauri::command]
 #[cfg(any(target_os = "android", target_os = "ios"))]
-async fn term_spawn(state: State<'_, AppState>, cols: u16, rows: u16) -> Result<String, String> {
-    let _ = (&state, cols, rows);
+async fn term_spawn(
+    state: State<'_, AppState>,
+    cols: u16,
+    rows: u16,
+    profile: Option<String>,
+) -> Result<String, String> {
+    let _ = (&state, cols, rows, profile);
     Err("Terminal is not available on mobile yet".to_string())
 }
 
@@ -251,9 +287,7 @@ fn term_kill(state: State<AppState>, id: String) -> Result<(), String> {
 pub fn run() {
     let initial_root = std::env::var("KARAT_ROOT")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-        });
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
@@ -277,6 +311,7 @@ pub fn run() {
             git_status,
             git_add,
             git_commit,
+            term_profiles,
             term_spawn,
             term_input,
             term_resize,
