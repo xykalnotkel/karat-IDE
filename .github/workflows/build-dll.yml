@@ -12,7 +12,7 @@ jobs:
     name: Windows DLL (x64)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -36,7 +36,7 @@ jobs:
           Copy-Item karat.h dist-dll/ -ErrorAction SilentlyContinue
           Compress-Archive -Path dist-dll/* -DestinationPath karat-windows-x64-dll.zip
       - name: Upload Windows DLL artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karat-windows-x64-dll
           path: |
@@ -48,7 +48,7 @@ jobs:
     name: Windows DLL (x86_32)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -63,7 +63,7 @@ jobs:
           Copy-Item target/i686-pc-windows-msvc/release/karat.dll dist-dll-x86/karat_x86.dll
           Compress-Archive -Path dist-dll-x86/* -DestinationPath karat-windows-x86-dll.zip
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karat-windows-x86-dll
           path: karat-windows-x86-dll.zip
@@ -72,7 +72,7 @@ jobs:
     name: Linux SO
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build SO
@@ -80,7 +80,7 @@ jobs:
       - name: List
         run: ls -lh target/release/*.so || ls -lh target/release/libkarat.*
       - name: Upload SO
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karat-linux-x64-so
           path: |
@@ -92,13 +92,13 @@ jobs:
     name: macOS dylib
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build dylib
         run: cargo build --release --lib
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karat-macos-dylib
           path: |
