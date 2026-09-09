@@ -15,7 +15,7 @@ jobs:
   build-dll-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc
@@ -33,7 +33,7 @@ jobs:
           Copy-Item target/i686-pc-windows-msvc/release/karat.dll release-dll/karat_x86.dll
           Copy-Item karat.h release-dll/
           Compress-Archive -Path release-dll/* -DestinationPath karat-dll-windows.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dll-windows
           path: karat-dll-windows.zip
@@ -44,13 +44,13 @@ jobs:
         platform: [ubuntu-22.04, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build lib
         run: cargo build --release --lib
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karat-lib-${{ matrix.platform }}
           path: |
@@ -65,13 +65,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Display structure
         run: ls -R artifacts
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/**/*.zip
