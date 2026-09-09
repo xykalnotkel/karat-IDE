@@ -1,5 +1,5 @@
 // karat.h - C header for Karat DLL
-// Karat v0.3.0 · developed by XySpace
+// Karat v0.4.0 · developed by XySpace
 #pragma once
 
 #include <stdint.h>

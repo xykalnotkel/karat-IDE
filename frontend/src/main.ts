@@ -17,6 +17,8 @@ import { loadWorkspaceExtensions } from './extensions';
 import { ExtensionsView } from './extensionsView';
 import { GitHubView } from './githubView';
 import { LivePreview } from './livePreview';
+import { SettingsView } from './settingsView';
+import { ProblemsView } from './problemsView';
 
 // ---------- theme ----------
 
@@ -48,7 +50,7 @@ function showShortcuts(): void {
 function showAbout(): void {
   showModal(
     'About Karat',
-    `<p><b>Karat v0.3.0</b> — a quiet, lightweight IDE crafted with Rust.</p>
+    `<p><b>Karat v0.4.0</b> — a quiet, lightweight IDE crafted with Rust.</p>
      <p>Developed by <b>XySpace</b> with the open-source community.</p>
      <p>Desktop: Tauri + Rust core with Git and a PTY terminal.<br>
      Android: touch editor, Open VSX, GitHub, and a sandbox command console.<br>
@@ -97,7 +99,13 @@ function start(): void {
   const gitView = new GitView(document.getElementById('view-git')!);
   new GitHubView(document.getElementById('view-github')!);
   const extensionsView = new ExtensionsView(document.getElementById('view-extensions')!);
+  const settingsView = new SettingsView(document.getElementById('view-settings')!);
   const terminal = new TerminalView(document.getElementById('terminal')!);
+  const problemsView = new ProblemsView(document.getElementById('problems')!);
+  settingsView.onChange = (value) => {
+    editor.applyPreferences(value);
+    terminal.applyPreferences(value);
+  };
   const preview = new LivePreview(document.getElementById('live-preview')!);
   editor.onDocument = (path, content) => preview.update(path, content);
   const previewToggle = document.getElementById('preview-toggle')!;
@@ -110,6 +118,12 @@ function start(): void {
   const panel = document.getElementById('panel')!;
   const activitybar = document.getElementById('activitybar')!;
   const menuPop = document.getElementById('menu-pop')!;
+  const terminalMount = document.getElementById('terminal')!;
+  const problemsMount = document.getElementById('problems')!;
+  const terminalTab = document.getElementById('panel-tab-terminal')!;
+  const problemsTab = document.getElementById('panel-tab-problems')!;
+  const panelActions = document.querySelector<HTMLElement>('.panel-actions')!;
+  let panelMode: 'terminal' | 'problems' = 'terminal';
 
   function toggleTheme(): void {
     store.theme = store.theme === 'dark' ? 'light' : 'dark';
@@ -179,16 +193,40 @@ function start(): void {
     store.panel = show;
     store.save();
     panel.classList.toggle('closed', !show);
-    if (show) {
+    if (show && panelMode === 'terminal') {
       if (!terminal.connected) terminal.connect();
       else terminal.refit();
     }
   }
 
-  function syncView(): void {
-    for (const v of VIEWS) {
-      document.getElementById(`view-${v.id}`)!.hidden = store.view !== v.id;
+  function setPanelMode(mode: 'terminal' | 'problems'): void {
+    panelMode = mode;
+    terminalMount.hidden = mode !== 'terminal';
+    problemsMount.hidden = mode !== 'problems';
+    panelActions.hidden = mode !== 'terminal';
+    terminalTab.classList.toggle('active', mode === 'terminal');
+    problemsTab.classList.toggle('active', mode === 'problems');
+    setPanel(true);
+  }
+
+  terminalTab.onclick = () => setPanelMode('terminal');
+  problemsTab.onclick = () => setPanelMode('problems');
+  document.getElementById('mobile-codebar')!.onclick = (event) => {
+    const action = (event.target as HTMLElement).closest<HTMLButtonElement>('button')?.dataset.editor;
+    if (action === 'save') void editor.saveActive();
+    else if (action === 'undo' || action === 'redo') editor.runEditorAction(action);
+    else if (action === 'format') editor.formatActive();
+    else if (action === 'palette') palette.showCommands();
+    else if (action === 'panel') {
+      setPanelMode('terminal');
+      setPanel(!store.panel);
     }
+  };
+
+  function syncView(): void {
+    document.querySelectorAll<HTMLElement>('.sideview').forEach((view) => {
+      view.hidden = view.id !== `view-${store.view}`;
+    });
     // Keep local Git out of the way on mobile; GitHub remains available.
     if (isMobile) document.getElementById('view-git')!.hidden = true;
     activitybar.querySelectorAll('.act-btn[data-view]').forEach((b) =>
@@ -219,7 +257,10 @@ function start(): void {
   if (isMobile) {
     const terminalBtn = el('button', 'act-btn', icon('terminal', 22));
     terminalBtn.title = 'Android sandbox terminal';
-    terminalBtn.onclick = () => setPanel(!store.panel);
+    terminalBtn.onclick = () => {
+      if (store.panel && panelMode === 'terminal') setPanel(false);
+      else setPanelMode('terminal');
+    };
     activitybar.append(terminalBtn);
   }
   // Desktop can run the active file through its full PTY.
@@ -230,8 +271,9 @@ function start(): void {
     activitybar.append(runBtn);
   }
   const settingsBtn = el('button', 'act-btn', icon('gear', 22));
-  settingsBtn.title = 'Command Palette';
-  settingsBtn.onclick = () => palette.showCommands();
+  settingsBtn.title = 'Settings';
+  settingsBtn.dataset.view = 'settings';
+  settingsBtn.onclick = () => setView('settings');
   activitybar.append(settingsBtn);
 
   // ----- cross-view wiring -----
@@ -257,6 +299,12 @@ function start(): void {
     gitView.onBranch = (b) => status.setBranch(b);
   }
   editor.onCursor = (l, c, lang) => status.setCursor(l, c, lang);
+  editor.onProblems = (problems) => {
+    problemsView.update(problems);
+    const count = document.getElementById('problems-count')!;
+    count.textContent = problems.length ? String(problems.length) : '';
+  };
+  problemsView.onOpen = (path, line) => void editor.openFile(path, line);
   palette.onOpenFile = (p) => void editor.openFile(p);
   terminal.onTogglePanel = () => setPanel(false);
   status.onBranchClick = () => {
@@ -311,7 +359,7 @@ function start(): void {
       }
       cmd = `${runner} '${active.replace(/'/g, `'\\''`)}'`;
     }
-    setPanel(true);
+    setPanelMode('terminal');
     if (!terminal.connected) {
       terminal.connect();
       await new Promise((r) => setTimeout(r, 700));
@@ -376,10 +424,12 @@ function start(): void {
         { label: 'GitHub', action: () => setView('github') },
         { label: 'Extensions', action: () => setView('extensions') },
         { label: 'HTML Live Preview', action: () => preview.toggle() },
+        { label: 'Problems', action: () => setPanelMode('problems') },
         { sep: true },
         { label: 'Toggle Sidebar', shortcut: 'Ctrl+B', action: () => setSidebar(!store.sidebar) },
         { label: 'Toggle Panel', shortcut: 'Ctrl+`', action: () => setPanel(!store.panel) },
         { sep: true },
+        { label: 'Settings', action: () => setView('settings') },
         { label: 'Toggle Theme', action: () => toggleTheme() },
       ],
     },
@@ -389,7 +439,7 @@ function start(): void {
         {
           label: 'New Terminal',
           action: () => {
-            setPanel(true);
+            setPanelMode('terminal');
             terminal.connect();
           },
         },
@@ -504,7 +554,10 @@ function start(): void {
       : []),
     { id: 'view.github', label: 'View: Show GitHub', run: () => setView('github') },
     { id: 'view.extensions', label: 'View: Show Extensions', run: () => setView('extensions') },
+    { id: 'view.settings', label: 'Preferences: Open Settings', run: () => setView('settings') },
     { id: 'view.preview', label: 'View: Toggle HTML Live Preview', run: () => preview.toggle() },
+    { id: 'view.problems', label: 'View: Show Problems', run: () => setPanelMode('problems') },
+    { id: 'editor.format', label: 'Editor: Format Document', hint: 'Shift+Alt+F', run: () => editor.formatActive() },
     {
       id: 'view.sidebar',
       label: 'View: Toggle Sidebar',
@@ -522,7 +575,7 @@ function start(): void {
       id: 'term.new',
       label: 'Terminal: New Terminal',
       run: () => {
-        setPanel(true);
+        setPanelMode('terminal');
         terminal.connect();
       },
     },
@@ -556,6 +609,11 @@ function start(): void {
       else if (modalOpen()) hideModal();
       return;
     }
+    if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      editor.formatActive();
+      return;
+    }
     if (!mod) return;
     const k = e.key.toLowerCase();
     if (k === 's' && !e.shiftKey) {
@@ -569,7 +627,8 @@ function start(): void {
       palette.showFiles();
     } else if (e.key === '`' && !e.shiftKey) {
       e.preventDefault();
-      setPanel(!store.panel);
+      if (store.panel && panelMode === 'terminal') setPanel(false);
+      else setPanelMode('terminal');
     } else if (k === 'b' && !e.shiftKey) {
       e.preventDefault();
       setSidebar(!store.sidebar);

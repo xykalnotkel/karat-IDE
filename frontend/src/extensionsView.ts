@@ -1,5 +1,10 @@
 import { api } from './api';
-import { discoverExtensions, InstalledExtension } from './extensions';
+import {
+  discoverExtensions,
+  setWorkerHostEnabled,
+  workerHostEnabled,
+  InstalledExtension,
+} from './extensions';
 import { icon } from './icons';
 import { isMobile } from './mobile';
 import { invoke, isTauri } from './transport';
@@ -71,13 +76,34 @@ export class ExtensionsView {
         <div class="extension-title">${esc(extension.name)}</div>
         <div class="extension-meta">v${esc(extension.version)} · ${esc(extension.author)}</div>
         <div class="extension-desc">${esc(extension.description || 'Workspace extension')}</div>
+        ${extension.permissions.length ? `<div class="extension-meta">Permissions: ${esc(extension.permissions.join(', '))}</div>` : ''}
       </div>`;
+    if (extension.worker) {
+      const enabled = workerHostEnabled(extension.id);
+      const worker = el('button', `worker-toggle${enabled ? ' enabled' : ''}`, enabled ? 'Worker enabled' : 'Enable worker');
+      worker.title = 'Experimental restricted JavaScript worker host';
+      worker.onclick = () => {
+        if (!enabled) {
+          const consent = confirm(
+            `EXPERIMENTAL EXTENSION CODE\n\nEnable restricted JavaScript for “${extension.name}”? ` +
+              'Its code will run in an isolated Web Worker without Karat file, shell, Node.js, or network APIs. ' +
+              'This is limited Karat compatibility—not the VS Code Extension Host. Only enable extensions you trust.',
+          );
+          if (!consent) return;
+        }
+        setWorkerHostEnabled(extension.id, !enabled);
+        toast(`Restricted worker ${enabled ? 'disabled' : 'enabled'}. Reloading…`, 'info');
+        window.setTimeout(() => location.reload(), 500);
+      };
+      card.append(worker);
+    }
     const remove = el('button', 'icon-btn extension-remove', icon('trash', 14));
     remove.title = `Uninstall ${extension.name}`;
     remove.onclick = async () => {
       if (!confirm(`Uninstall extension “${extension.name}”?`)) return;
       try {
         await api.remove(extension.folder);
+        setWorkerHostEnabled(extension.id, false);
         toast(`${extension.name} uninstalled. Reloading…`, 'ok');
         window.setTimeout(() => location.reload(), 450);
       } catch (error) {

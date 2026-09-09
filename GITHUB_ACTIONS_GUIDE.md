@@ -39,13 +39,13 @@ crate-type = ["cdylib", "rlib", "staticlib"]
 
 #### `release.yml` - Release otomatis
 Trigger:
-- `git tag v0.3.0 && git push origin v0.3.0`
+- `git tag v0.4.0 && git push origin v0.4.0`
 - atau manual via workflow_dispatch
 
 Hasil: GitHub Release dengan:
 - `karat-dll-windows.zip`
-- `Karat_0.3.0_x64-setup.exe`
-- `Karat_0.3.0_x64_en-US.msi`
+- `Karat_0.4.0_x64-setup.exe`
+- `Karat_0.4.0_x64_en-US.msi`
 - `libkarat.so`, `libkarat.dylib`
 
 ### 4. Scripts
@@ -79,8 +79,8 @@ git push -u origin main
 
 5. Untuk release:
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 ## Build lokal (tanpa GitHub Actions):

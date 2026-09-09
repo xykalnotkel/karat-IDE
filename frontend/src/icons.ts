@@ -28,6 +28,9 @@ const P: Record<string, string> = {
   preview: `<path d="M1.5 8s2.4-4 6.5-4 6.5 4 6.5 4-2.4 4-6.5 4S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.8"/>`,
   external: `<path d="M9 2h5v5M14 2L7.5 8.5"/><path d="M12 9v4H3V4h4"/>`,
   package: `<path d="M2 5l6-3 6 3v6l-6 3-6-3z"/><path d="M2 5l6 3 6-3M8 8v6"/>`,
+  upload: `<path d="M8 11V3M5 6l3-3 3 3"/><path d="M3 13h10"/>`,
+  diff: `<path d="M5 2v12M3 4l2-2 2 2M11 14V2M9 12l2 2 2-2"/>`,
+  sliders: `<path d="M3 2v12M8 2v12M13 2v12"/><circle cx="3" cy="5" r="1.5" fill="currentColor"/><circle cx="8" cy="10" r="1.5" fill="currentColor"/><circle cx="13" cy="6" r="1.5" fill="currentColor"/>`,
 };
 
 export function icon(name: string, size = 16): string {

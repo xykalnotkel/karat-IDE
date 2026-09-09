@@ -96,8 +96,8 @@ git push -u origin main
 - Setiap push ke `main` → `build-dll.yml` jalan, hasil DLL bisa didownload di tab **Actions → Artifacts**
 - Push tag untuk release:
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.4.0
+git push origin v0.4.0
 # → release.yml akan buat GitHub Release dengan DLL + .exe + .msi
 ```
 
@@ -106,7 +106,7 @@ git push origin v0.3.0
 - `karat-windows-x86-dll.zip` → `karat_x86.dll`
 - `karat-linux-x64-so` → `libkarat.so`
 - `karat-macos-dylib` → `libkarat.dylib`
-- Tauri bundles → `Karat_0.3.0_x64-setup.exe`, `Karat_0.3.0_x64_en-US.msi`, dll
+- Tauri bundles → `Karat_0.4.0_x64-setup.exe`, `Karat_0.4.0_x64_en-US.msi`, dll
 
 ---
 

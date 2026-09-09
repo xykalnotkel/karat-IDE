@@ -24,7 +24,7 @@ export class StatusBar {
     this.langEl = el('div', 'sb-item', 'plaintext');
     const enc = el('div', 'sb-item', 'UTF-8');
     const eol = el('div', 'sb-item', 'LF');
-    const ver = el('div', 'sb-item', 'Karat v0.3.0 · XySpace');
+    const ver = el('div', 'sb-item', 'Karat v0.4.0 · XySpace');
     this.right.append(this.posEl, this.langEl, enc, eol, ver);
     mount.append(this.left, this.right);
   }

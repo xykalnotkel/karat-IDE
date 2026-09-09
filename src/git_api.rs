@@ -44,6 +44,31 @@ pub async fn add(
 }
 
 #[derive(Deserialize)]
+pub struct DiffQuery {
+    pub path: String,
+    #[serde(default)]
+    pub staged: bool,
+}
+
+pub async fn diff(
+    State(state): State<AppState>,
+    Query(query): Query<DiffQuery>,
+) -> ApiResult<core_git::GitDiff> {
+    core_git::diff(&state.root, &query.path, query.staged)
+        .await
+        .map(Json)
+        .map_err(map_err)
+}
+
+pub async fn pull(State(state): State<AppState>) -> ApiResult<core_git::GitOutput> {
+    core_git::pull(&state.root).await.map(Json).map_err(map_err)
+}
+
+pub async fn push(State(state): State<AppState>) -> ApiResult<core_git::GitOutput> {
+    core_git::push(&state.root).await.map(Json).map_err(map_err)
+}
+
+#[derive(Deserialize)]
 pub struct CommitReq {
     pub message: String,
 }

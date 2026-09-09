@@ -25,12 +25,16 @@ pub struct GitOutput {
 }
 
 async fn run_git(dir: &Path, args: &[&str]) -> Result<std::process::Output, CoreError> {
-    tokio::process::Command::new("git")
+    let mut command = tokio::process::Command::new("git");
+    command
         .arg("-C")
         .arg(dir)
         .args(args)
-        .output()
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .kill_on_drop(true);
+    tokio::time::timeout(std::time::Duration::from_secs(60), command.output())
         .await
+        .map_err(|_| CoreError::Io("git command timed out after 60 seconds".to_string()))?
         .map_err(|e| CoreError::Io(format!("failed to run git: {e}")))
 }
 
@@ -113,6 +117,51 @@ pub async fn add(root: &Path, paths: &[String]) -> Result<GitOutput, CoreError> 
     let mut args: Vec<&str> = vec!["add", "--"];
     args.extend(paths.iter().map(|s| s.as_str()));
     let out = run_git(root, &args).await?;
+    Ok(GitOutput {
+        ok: out.status.success(),
+        output: combined_output(&out),
+    })
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GitDiff {
+    pub path: String,
+    pub staged: bool,
+    pub content: String,
+    pub truncated: bool,
+}
+
+pub async fn diff(root: &Path, path: &str, staged: bool) -> Result<GitDiff, CoreError> {
+    safe_join(root, path)?;
+    let args = if staged {
+        vec!["diff", "--cached", "--no-ext-diff", "--", path]
+    } else {
+        vec!["diff", "--no-ext-diff", "--", path]
+    };
+    let out = run_git(root, &args).await?;
+    if !out.status.success() {
+        return Err(CoreError::Io(combined_output(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout);
+    let truncated = text.chars().count() > 200_000;
+    Ok(GitDiff {
+        path: path.to_string(),
+        staged,
+        content: text.chars().take(200_000).collect(),
+        truncated,
+    })
+}
+
+pub async fn pull(root: &Path) -> Result<GitOutput, CoreError> {
+    let out = run_git(root, &["pull", "--ff-only"]).await?;
+    Ok(GitOutput {
+        ok: out.status.success(),
+        output: combined_output(&out),
+    })
+}
+
+pub async fn push(root: &Path) -> Result<GitOutput, CoreError> {
+    let out = run_git(root, &["push"]).await?;
     Ok(GitOutput {
         ok: out.status.success(),
         output: combined_output(&out),

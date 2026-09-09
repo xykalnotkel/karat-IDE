@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Added persistent editor and terminal preferences, debounced auto-save, document formatting, and Monaco-backed Problems navigation.
+- Added bounded Git diffs plus fast-forward-only pull and push controls across desktop and browser-hosted modes.
+- Added an explicitly opt-in, time-bounded restricted Web Worker host for Karat-specific extension commands.
+- Added a mobile coding toolbar and improved phone access to Terminal and Problems.
+
 ## 0.3.0
 
 - Added GitHub Device Flow and session-only fine-grained token login with repository browsing.

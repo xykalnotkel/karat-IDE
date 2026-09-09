@@ -7,6 +7,7 @@ import { b64encode, b64decode } from './ui';
 import { store } from './state';
 import { webAuthToken } from './api';
 import { isMobile } from './mobile';
+import { preferences, Preferences } from './preferences';
 
 interface TermEvent {
   t: string;
@@ -35,7 +36,7 @@ export class TerminalView {
   constructor(mount: HTMLElement) {
     this.mount = mount;
     this.term = new Terminal({
-      fontSize: 13,
+      fontSize: preferences.terminalFontSize,
       fontFamily: "Menlo,Consolas,'Courier New',monospace",
       cursorBlink: true,
       scrollback: 5000,
@@ -135,6 +136,11 @@ export class TerminalView {
 
   applyTheme(): void {
     this.term.options.theme = this.theme();
+  }
+
+  applyPreferences(value: Preferences): void {
+    this.term.options.fontSize = value.terminalFontSize;
+    this.refit();
   }
 
   connect(): void {

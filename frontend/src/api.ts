@@ -29,6 +29,13 @@ export interface GitStatus {
   files: GitFile[];
 }
 
+export interface GitDiff {
+  path: string;
+  staged: boolean;
+  content: string;
+  truncated: boolean;
+}
+
 // Remote web mode can be opened as `https://host/?token=...`. Keep the
 // URL-safe token for API/WebSocket requests, then remove it from browser history.
 const pageToken = new URLSearchParams(location.search).get('token');
@@ -96,4 +103,15 @@ export const api = {
 
   gitCommit: (message: string): Promise<{ ok: boolean; output: string }> =>
     isTauri ? invoke('git_commit', { message }) : post('/api/git/commit', { message }),
+
+  gitDiff: (path: string, staged: boolean): Promise<GitDiff> =>
+    isTauri
+      ? invoke('git_diff', { path, staged })
+      : req(`/api/git/diff?path=${encodeURIComponent(path)}&staged=${staged}`),
+
+  gitPull: (): Promise<{ ok: boolean; output: string }> =>
+    isTauri ? invoke('git_pull') : post('/api/git/pull', {}),
+
+  gitPush: (): Promise<{ ok: boolean; output: string }> =>
+    isTauri ? invoke('git_push') : post('/api/git/push', {}),
 };

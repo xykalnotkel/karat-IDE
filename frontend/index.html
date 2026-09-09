@@ -34,9 +34,13 @@
       <section class="sideview" id="view-git" hidden></section>
       <section class="sideview" id="view-github" hidden></section>
       <section class="sideview" id="view-extensions" hidden></section>
+      <section class="sideview" id="view-settings" hidden></section>
     </aside>
     <main id="editor-group">
       <div id="tabsbar"><div id="tabs" role="tablist"></div><button id="preview-toggle" class="icon-btn" title="Toggle HTML Live Preview" aria-label="Toggle HTML Live Preview"></button></div>
+      <div id="mobile-codebar" aria-label="Mobile coding controls">
+        <button data-editor="save">Save</button><button data-editor="undo">↶</button><button data-editor="redo">↷</button><button data-editor="format">Format</button><button data-editor="palette">⌘</button><button data-editor="panel">Terminal</button>
+      </div>
       <div id="editor-wrap">
         <div id="editor"></div>
         <aside id="live-preview" hidden></aside>
@@ -63,7 +67,7 @@
       </div>
       <div id="panel">
         <div id="panel-header">
-          <div class="panel-tabs"><span class="panel-tab active">TERMINAL</span></div>
+          <div class="panel-tabs"><button id="panel-tab-terminal" class="panel-tab active">TERMINAL</button><button id="panel-tab-problems" class="panel-tab">PROBLEMS <span id="problems-count"></span></button></div>
           <div class="panel-actions">
             <select id="term-profile" title="Terminal profile" aria-label="Terminal profile"></select>
             <button id="termux-open" class="btn" title="Open Termux companion information" hidden>Termux</button>
@@ -72,7 +76,7 @@
             <button id="panel-hide" class="icon-btn" title="Hide panel"></button>
           </div>
         </div>
-        <div id="panel-body"><div id="terminal"></div></div>
+        <div id="panel-body"><div id="terminal"></div><div id="problems" hidden></div></div>
       </div>
     </main>
   </div>

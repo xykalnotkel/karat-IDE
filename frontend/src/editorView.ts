@@ -5,14 +5,26 @@ import { el, esc, toast } from './ui';
 import { icon } from './icons';
 import { languageFor } from './lang';
 import { fileIconKind } from './fileIcons';
+import { preferences, Preferences } from './preferences';
+
+export interface EditorProblem {
+  path: string;
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  source: string;
+}
 
 export class EditorView {
   private editor: monaco.editor.IStandaloneCodeEditor;
   private models = new Map<string, monaco.editor.ITextModel>();
   private savedVersion = new Map<string, number>();
+  private autoSaveTimer = 0;
 
   onCursor: (line: number, col: number, lang: string) => void = () => {};
   onDocument: (path: string | null, content: string) => void = () => {};
+  onProblems: (problems: EditorProblem[]) => void = () => {};
 
   constructor(
     editorMount: HTMLElement,
@@ -21,25 +33,33 @@ export class EditorView {
   ) {
     this.editor = monaco.editor.create(editorMount, {
       automaticLayout: true,
-      minimap: { enabled: true },
-      fontSize: 13,
+      minimap: { enabled: preferences.minimap },
+      fontSize: preferences.editorFontSize,
       fontFamily: "'JetBrains Mono','Fira Code',Consolas,'Courier New',monospace",
-      fontLigatures: true,
+      fontLigatures: preferences.fontLigatures,
       padding: { top: 10 },
       smoothScrolling: true,
       cursorBlinking: 'smooth',
       cursorSmoothCaretAnimation: 'on',
-      renderWhitespace: 'selection',
-      stickyScroll: { enabled: true },
+      renderWhitespace: preferences.renderWhitespace,
+      stickyScroll: { enabled: preferences.stickyScroll },
+      wordWrap: preferences.wordWrap ? 'on' : 'off',
       scrollBeyondLastLine: false,
-      tabSize: 2,
+      tabSize: preferences.tabSize,
       insertSpaces: true,
       fixedOverflowWidgets: true,
     });
-    this.editor.onDidChangeModelContent(() => this.renderTabs());
+    this.editor.onDidChangeModelContent(() => {
+      this.renderTabs();
+      if (preferences.autoSave && store.active) {
+        window.clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = window.setTimeout(() => void this.saveActive(), 900);
+      }
+    });
     this.editor.onDidChangeCursorPosition((e) =>
       this.onCursor(e.position.lineNumber, e.position.column, this.activeLang()),
     );
+    monaco.editor.onDidChangeMarkers(() => this.emitProblems());
     this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       void this.saveActive();
     });
@@ -49,6 +69,18 @@ export class EditorView {
 
   applyTheme(): void {
     monaco.editor.setTheme(store.theme === 'dark' ? 'vs-dark' : 'vs');
+  }
+
+  applyPreferences(value: Preferences): void {
+    this.editor.updateOptions({
+      fontSize: value.editorFontSize,
+      tabSize: value.tabSize,
+      wordWrap: value.wordWrap ? 'on' : 'off',
+      minimap: { enabled: value.minimap },
+      stickyScroll: { enabled: value.stickyScroll },
+      fontLigatures: value.fontLigatures,
+      renderWhitespace: value.renderWhitespace,
+    });
   }
 
   activePath(): string | null {
@@ -61,6 +93,38 @@ export class EditorView {
 
   private emitDocument(): void {
     this.onDocument(store.active, this.activeContent());
+  }
+
+  private emitProblems(): void {
+    const problems: EditorProblem[] = [];
+    for (const [path, model] of this.models) {
+      for (const marker of monaco.editor.getModelMarkers({ resource: model.uri }).slice(0, 200)) {
+        const severity =
+          marker.severity >= monaco.MarkerSeverity.Error
+            ? 'error'
+            : marker.severity >= monaco.MarkerSeverity.Warning
+              ? 'warning'
+              : 'info';
+        problems.push({
+          path,
+          line: marker.startLineNumber,
+          column: marker.startColumn,
+          message: marker.message,
+          severity,
+          source: marker.source || 'language service',
+        });
+      }
+    }
+    this.onProblems(problems.slice(0, 500));
+  }
+
+  formatActive(): void {
+    this.editor.trigger('karat', 'editor.action.formatDocument', null);
+  }
+
+  runEditorAction(action: 'undo' | 'redo'): void {
+    this.editor.trigger('karat-mobile', action, null);
+    this.editor.focus();
   }
 
   private activeLang(): string {

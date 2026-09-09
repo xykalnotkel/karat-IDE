@@ -271,7 +271,56 @@ async fn git_commit(
     Err("Git is not available on mobile yet".to_string())
 }
 
-// ---------- terminal (desktop only — no PTY support on phones) ----------
+#[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+async fn git_diff(
+    state: State<'_, AppState>,
+    path: String,
+    staged: bool,
+) -> Result<core_git::GitDiff, String> {
+    core_git::diff(&root_of(&state), &path, staged)
+        .await
+        .map_err(msg)
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+async fn git_diff(
+    state: State<'_, AppState>,
+    path: String,
+    staged: bool,
+) -> Result<serde_json::Value, String> {
+    let _ = (&state, path, staged);
+    Err("Git is not available on mobile yet".to_string())
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+async fn git_pull(state: State<'_, AppState>) -> Result<core_git::GitOutput, String> {
+    core_git::pull(&root_of(&state)).await.map_err(msg)
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+async fn git_pull(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let _ = &state;
+    Err("Git is not available on mobile yet".to_string())
+}
+
+#[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+async fn git_push(state: State<'_, AppState>) -> Result<core_git::GitOutput, String> {
+    core_git::push(&root_of(&state)).await.map_err(msg)
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+async fn git_push(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let _ = &state;
+    Err("Git is not available on mobile yet".to_string())
+}
+
+// ---------- terminal (desktop PTY; Android uses the bounded command console) ----------
 
 #[tauri::command]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -414,6 +463,9 @@ pub fn run() {
             git_status,
             git_add,
             git_commit,
+            git_diff,
+            git_pull,
+            git_push,
             term_profiles,
             term_spawn,
             term_input,

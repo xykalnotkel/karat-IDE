@@ -1,5 +1,5 @@
 import { api, GitFile, GitStatus } from './api';
-import { el, esc, toast } from './ui';
+import { el, esc, showModal, toast } from './ui';
 import { icon } from './icons';
 
 export class GitView {
@@ -13,10 +13,16 @@ export class GitView {
     const header = el('div', 'side-header');
     header.innerHTML = '<span>SOURCE CONTROL</span>';
     const acts = el('div', 'side-actions');
+    const bPull = el('button', 'icon-btn', icon('download'));
+    bPull.title = 'Git pull (fast-forward only)';
+    bPull.onclick = () => void this.sync('pull');
+    const bPush = el('button', 'icon-btn', icon('upload'));
+    bPush.title = 'Git push';
+    bPush.onclick = () => void this.sync('push');
     const bRefresh = el('button', 'icon-btn', icon('refresh'));
     bRefresh.title = 'Refresh';
     bRefresh.onclick = () => void this.refresh();
-    acts.append(bRefresh);
+    acts.append(bPull, bPush, bRefresh);
     header.append(acts);
 
     const commitBox = el('div', 'git-commit');
@@ -94,6 +100,15 @@ export class GitView {
     row.innerHTML =
       `<span class="git-badge b-${b}">${b}</span>` +
       `<span class="git-path" title="${esc(f.path)}">${esc(f.path)}</span>`;
+    if (b !== 'U') {
+      const diff = el('button', 'icon-btn sm', icon('diff', 14));
+      diff.title = staged ? 'View staged diff' : 'View diff';
+      diff.onclick = (event) => {
+        event.stopPropagation();
+        void this.showDiff(f.path, staged);
+      };
+      row.append(diff);
+    }
     if (!staged) {
       const btn = el('button', 'icon-btn sm', icon('plus', 14));
       btn.title = 'Stage';
@@ -110,6 +125,26 @@ export class GitView {
     }
     row.onclick = () => this.onOpen(f.path);
     return row;
+  }
+
+  private async showDiff(path: string, staged: boolean): Promise<void> {
+    try {
+      const diff = await api.gitDiff(path, staged);
+      const suffix = diff.truncated ? '\n\n[diff truncated]' : '';
+      showModal(`${staged ? 'Staged diff' : 'Diff'} · ${path}`, `<pre class="diff-view">${esc(diff.content || 'No textual changes.')}${suffix}</pre>`);
+    } catch (error) {
+      toast(`Diff failed: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    }
+  }
+
+  private async sync(operation: 'pull' | 'push'): Promise<void> {
+    try {
+      const result = operation === 'pull' ? await api.gitPull() : await api.gitPush();
+      toast(result.ok ? `Git ${operation} complete` : `${operation} failed: ${result.output}`, result.ok ? 'ok' : 'error', 6000);
+      if (result.ok) void this.refresh();
+    } catch (error) {
+      toast(`Git ${operation} failed: ${error instanceof Error ? error.message : String(error)}`, 'error', 6000);
+    }
   }
 
   private async commit(): Promise<void> {

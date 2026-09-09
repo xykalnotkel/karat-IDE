@@ -6,20 +6,20 @@
 
 **Karat is a community-first lightweight IDE developed by [XySpace](https://github.com/xykalnotkel).** It combines a Rust/Tauri core with Monaco and a quiet, Surface-friendly interface. The project targets Windows, Linux, Android, and an optional browser-hosted mode.
 
-> **Status: v0.3.0 alpha.** Karat is useful today, but APIs and storage formats may still change. Android and browser mode intentionally provide fewer native capabilities than desktop.
+> **Status: v0.4.0 alpha.** Karat is useful today, but APIs and storage formats may still change. Android and browser mode intentionally provide fewer native capabilities than desktop.
 
 ## Features
 
 | Area | Capability |
 |---|---|
-| Editor | Monaco, 40+ languages, tabs, minimap, dirty state, sticky scroll |
-| Workspace | Explorer, native Open Folder, create, rename, delete, full-text search |
+| Editor | Monaco, 40+ languages, diagnostics/Problems, formatting, auto-save, persistent preferences, tabs, minimap, and sticky scroll |
+| Workspace | Explorer, native Open Folder, create, rename, delete, and full-text search |
 | Terminal | Native PTY with detected PowerShell, cmd, WSL, Bash, Zsh, Fish, Nushell, and POSIX profiles |
 | Run | Context-aware commands for Rust, Node.js, Python, and other common files |
-| Git | Branch/status view, staging, and commits through the installed Git CLI |
+| Git | Branch/status, bounded file diffs, staging, commits, fast-forward-only pull, and push through installed Git |
 | Navigation | Fuzzy Quick Open and Command Palette |
-| Extensions | Named folders, local VSIX import, and Open VSX safe-compatibility installation |
-| Experience | HTML Live Preview, semantic file icons, ANSI terminal colors, dark/light themes, and quiet chrome |
+| Extensions | Named folders, local VSIX, Open VSX safe compatibility, and an explicitly enabled experimental restricted Web Worker host |
+| Experience | Mobile coding controls, HTML Live Preview, semantic icons, ANSI colors, dark/light themes, and quiet Surface-friendly chrome |
 
 ## Quick start
 
@@ -125,15 +125,20 @@ Example `extension.json`:
   "version": "1.0.0",
   "description": "Useful commands for this project",
   "author": "Example Author",
+  "permissions": ["experimentalWorker"],
+  "worker": "worker.js",
   "commands": [
-    { "id": "test", "title": "Run tests", "terminal": "npm test" }
+    { "id": "test", "title": "Run tests", "terminal": "npm test" },
+    { "id": "hello", "title": "Worker hello", "worker": "hello" }
   ]
 }
 ```
 
-IDs accept ASCII letters, numbers, `-`, and `_`. Installation rejects symbolic links and enforces count/size limits. Extension v1 never evaluates third-party JavaScript; a contributed terminal command runs only after an explicit user action. Review commands before running them.
+IDs accept ASCII letters, numbers, `-`, and `_`. Installation rejects symbolic links and enforces count/size limits. Declarative terminal commands run only after an explicit user action; review commands before running them.
 
-Karat can search Open VSX and safely import local `.vsix` packages. Imported files are bounded and archive paths are validated. Karat records supported theme, icon-theme, snippet, and grammar contributions, but does not execute a package’s JavaScript extension host. Karat therefore does **not** claim full VS Code compatibility; unsupported extensions can be installed as resources but will not run their Node/VS Code APIs.
+A named Karat extension may request the `experimentalWorker` permission and expose command functions from `globalThis.karatExtension.commands` in its worker file. JavaScript remains off for each extension until the user accepts a prominent warning and enables **Experimental restricted worker**. Karat then runs a fresh isolated Web Worker per command, blocks common network and nested-worker APIs, provides no file/shell/Node access, and terminates it after five seconds. This reduces risk but is not a security guarantee; only enable trusted code.
+
+Karat can search Open VSX and safely import local `.vsix` packages. Imported files are bounded and archive paths are validated. Karat records supported theme, icon-theme, snippet, and grammar contributions, but does not automatically execute package entry points. The restricted worker is a small Karat-specific API—not the Node/VS Code Extension Host. Karat therefore does **not** claim full VS Code compatibility; unsupported extensions can be installed as resources but will not run their VS Code APIs.
 
 ## Architecture
 
