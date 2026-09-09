@@ -16,7 +16,10 @@ open class BuildTask : DefaultTask() {
 
     @TaskAction
     fun assemble() {
-        val executable = """node""";
+        // The project installs @tauri-apps/cli through npm. Calling `node tauri`
+        // makes Node look for a non-existent `src-tauri/tauri` module; npx
+        // resolves the repository-local CLI on Linux, macOS, and Windows.
+        val executable = """npx""";
         try {
             runTauriCli(executable)
         } catch (e: Exception) {
